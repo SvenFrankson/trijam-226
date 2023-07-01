@@ -33,6 +33,7 @@ class Creep {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
             this.svgElement.setAttribute("stroke", "black");
+            this.svgElement.setAttribute("stroke-width", "3");
             this.svgElement.setAttribute("fill", "red");
             this.main.container.appendChild(this.svgElement);
         }
@@ -57,6 +58,7 @@ class Main {
             requestAnimationFrame(this._mainLoop);
         };
         this.terrain = new Terrain(this);
+        this.player = new Player(new Vec2(20, 20), this);
     }
     initialize() {
         this.container = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -69,10 +71,12 @@ class Main {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
         }
         this._update = (dt) => {
+            this.player.update(dt);
             this.creeps.forEach(creep => {
                 creep.update(dt);
             });
             this.terrain.redraw();
+            this.player.redraw();
             this.creeps.forEach(creep => {
                 creep.redraw();
             });
@@ -85,6 +89,32 @@ window.addEventListener("load", () => {
     let main = new Main();
     main.initialize();
 });
+class Player {
+    constructor(pos, main) {
+        this.pos = pos;
+        this.main = main;
+        this.radius = 15;
+        this.main;
+        this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
+        this.speed.normalizeInPlace().scaleInPlace(0);
+    }
+    update(dt) {
+        let dp = this.speed.scale(dt);
+        this.pos.addInPlace(dp);
+    }
+    redraw() {
+        if (!this.svgElement) {
+            this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            this.svgElement.setAttribute("r", this.radius.toFixed(0));
+            this.svgElement.setAttribute("stroke", "black");
+            this.svgElement.setAttribute("stroke-width", "3");
+            this.svgElement.setAttribute("fill", "yellow");
+            this.main.container.appendChild(this.svgElement);
+        }
+        this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
+        this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
+    }
+}
 class Terrain {
     constructor(main) {
         this.main = main;

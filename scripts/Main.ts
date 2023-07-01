@@ -2,11 +2,13 @@ class Main {
 
     public container: SVGElement;
     public terrain: Terrain;
+    public player: Player;
     public creeps: Creep[] = [];
     public testCreep: Creep;
 
     constructor() {
         this.terrain = new Terrain(this);
+        this.player = new Player(new Vec2(20, 20), this);
     }
 
     public initialize(): void {
@@ -22,11 +24,13 @@ class Main {
         }
 
         this._update = (dt: number) => {
+            this.player.update(dt);
             this.creeps.forEach(creep => {
                 creep.update(dt);
             });
 
             this.terrain.redraw();
+            this.player.redraw();
             this.creeps.forEach(creep => {
                 creep.redraw();
             });
