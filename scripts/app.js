@@ -93,12 +93,22 @@ class Player {
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
+        this.speedValue = 200;
         this.radius = 15;
+        this.currentSegmentIndex = 0;
         this.main;
-        this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
-        this.speed.normalizeInPlace().scaleInPlace(0);
+        this.speed = new Vec2(0, 0);
     }
     update(dt) {
+        let points = this.main.terrain.points;
+        let ptA = points[this.currentSegmentIndex];
+        let ptB = points[(this.currentSegmentIndex + 1) % points.length];
+        let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+        this.pos = proj;
+        if (proj.subtract(ptB).lengthSquared() < 1) {
+            this.currentSegmentIndex = (this.currentSegmentIndex + 1) % points.length;
+        }
+        this.speed = ptB.subtract(ptA).normalizeInPlace().scaleInPlace(this.speedValue);
         let dp = this.speed.scale(dt);
         this.pos.addInPlace(dp);
     }
