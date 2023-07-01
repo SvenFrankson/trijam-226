@@ -11,6 +11,7 @@ class Player {
     public speed: Vec2;
     public radius: number = 15;
     public svgElement: SVGCircleElement;
+    public playerDrawnPath: SVGPathElement;
     public currentSegmentIndex: number = 0;
     public drawnPoints: Vec2[] = [];
 
@@ -110,5 +111,24 @@ class Player {
 
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
+
+        if (!this.playerDrawnPath) {
+            this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            this.main.container.appendChild(this.playerDrawnPath);
+        }
+
+        let d = "";
+        let points = [...this.drawnPoints, this.pos];
+        if (points.length > 0) {
+            d = "M" + points[0].x + " " + points[0].y + " ";
+            for (let i = 1; i < points.length; i++) {
+                d += "L" + points[i].x + " " + points[i].y + " ";
+            }
+        }
+
+        this.playerDrawnPath.setAttribute("stroke", "grey");
+        this.playerDrawnPath.setAttribute("fill", "none");
+        this.playerDrawnPath.setAttribute("stroke-width", "5");
+        this.playerDrawnPath.setAttribute("d", d);
     }
 }

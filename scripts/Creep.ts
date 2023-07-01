@@ -37,6 +37,19 @@ class Creep {
                 this.pos.subtractInPlace(dp);
             }
         }
+
+        points = [...this.main.player.drawnPoints, this.main.player.pos];
+        for (let i = 0; i < points.length - 1; i++) {
+            let ptA = points[i];
+            let ptB = points[i + 1];
+            let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+            
+            let sqrDist = this.pos.subtract(proj).lengthSquared();
+            
+            if (sqrDist < this.radius * this.radius) {
+                this.main.gameover();
+            }
+        }
     }
 
     public redraw(): void {

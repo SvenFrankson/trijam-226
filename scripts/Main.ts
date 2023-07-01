@@ -43,6 +43,12 @@ class Main {
         this._mainLoop();
     }
 
+    public stop(): void {
+        this._update = () => {
+
+        }
+    }
+
     private _lastT: number = 0;
     private _mainLoop = () => {
         let dt = 0;
@@ -55,6 +61,10 @@ class Main {
             this._update(dt);
         }
         requestAnimationFrame(this._mainLoop);
+    }
+
+    public gameover(): void {
+        this.stop();
     }
 
     private _update: (dt: number) => void;

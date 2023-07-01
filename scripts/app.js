@@ -27,6 +27,16 @@ class Creep {
                 this.pos.subtractInPlace(dp);
             }
         }
+        points = [...this.main.player.drawnPoints, this.main.player.pos];
+        for (let i = 0; i < points.length - 1; i++) {
+            let ptA = points[i];
+            let ptB = points[i + 1];
+            let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+            let sqrDist = this.pos.subtract(proj).lengthSquared();
+            if (sqrDist < this.radius * this.radius) {
+                this.main.gameover();
+            }
+        }
     }
     redraw() {
         if (!this.svgElement) {
@@ -86,6 +96,13 @@ class Main {
             //this.testCreep.redraw();
         };
         this._mainLoop();
+    }
+    stop() {
+        this._update = () => {
+        };
+    }
+    gameover() {
+        this.stop();
     }
 }
 window.addEventListener("load", () => {
@@ -189,6 +206,22 @@ class Player {
         }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
+        if (!this.playerDrawnPath) {
+            this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            this.main.container.appendChild(this.playerDrawnPath);
+        }
+        let d = "";
+        let points = [...this.drawnPoints, this.pos];
+        if (points.length > 0) {
+            d = "M" + points[0].x + " " + points[0].y + " ";
+            for (let i = 1; i < points.length; i++) {
+                d += "L" + points[i].x + " " + points[i].y + " ";
+            }
+        }
+        this.playerDrawnPath.setAttribute("stroke", "grey");
+        this.playerDrawnPath.setAttribute("fill", "none");
+        this.playerDrawnPath.setAttribute("stroke-width", "5");
+        this.playerDrawnPath.setAttribute("d", d);
     }
 }
 class Terrain {
