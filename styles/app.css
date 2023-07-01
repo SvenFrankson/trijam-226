@@ -1,0 +1,7 @@
+#main-container {
+    width: min(90vw, 90vh);
+    height: min(90vw, 90vh);
+    position: fixed;
+    left: calc((100vw - min(90vw, 90vh)) * 0.5);
+    top: calc((100vh - min(90vw, 90vh)) * 0.5);
+}
