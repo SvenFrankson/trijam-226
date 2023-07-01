@@ -70,6 +70,9 @@ class Main {
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
         }
+    }
+    start() {
+        this.player.start();
         this._update = (dt) => {
             this.player.update(dt);
             this.creeps.forEach(creep => {
@@ -88,29 +91,69 @@ class Main {
 window.addEventListener("load", () => {
     let main = new Main();
     main.initialize();
+    main.start();
 });
+var PlayerMode;
+(function (PlayerMode) {
+    PlayerMode[PlayerMode["Idle"] = 0] = "Idle";
+    PlayerMode[PlayerMode["Tracing"] = 1] = "Tracing";
+    PlayerMode[PlayerMode["Closing"] = 2] = "Closing";
+})(PlayerMode || (PlayerMode = {}));
 class Player {
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
+        this.mode = PlayerMode.Idle;
         this.speedValue = 200;
         this.radius = 15;
         this.currentSegmentIndex = 0;
         this.main;
         this.speed = new Vec2(0, 0);
     }
+    start() {
+        document.body.addEventListener("keydown", (ev) => {
+            if (ev.code === "Space") {
+                this.speed.rotateInPlace(Math.PI * 0.5);
+                if (this.mode === PlayerMode.Idle) {
+                    this.mode = PlayerMode.Tracing;
+                }
+                else {
+                    this.mode = PlayerMode.Closing;
+                }
+            }
+        });
+    }
     update(dt) {
-        let points = this.main.terrain.points;
-        let ptA = points[this.currentSegmentIndex];
-        let ptB = points[(this.currentSegmentIndex + 1) % points.length];
-        let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
-        this.pos = proj;
-        if (proj.subtract(ptB).lengthSquared() < 1) {
-            this.currentSegmentIndex = (this.currentSegmentIndex + 1) % points.length;
+        if (this.mode === PlayerMode.Idle) {
+            let points = this.main.terrain.points;
+            let ptA = points[this.currentSegmentIndex];
+            let ptB = points[(this.currentSegmentIndex + 1) % points.length];
+            let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+            this.pos = proj;
+            if (proj.subtract(ptB).lengthSquared() < 1) {
+                this.currentSegmentIndex = (this.currentSegmentIndex + 1) % points.length;
+            }
+            this.speed = ptB.subtract(ptA).normalizeInPlace().scaleInPlace(this.speedValue);
+            let dp = this.speed.scale(dt);
+            this.pos.addInPlace(dp);
         }
-        this.speed = ptB.subtract(ptA).normalizeInPlace().scaleInPlace(this.speedValue);
-        let dp = this.speed.scale(dt);
-        this.pos.addInPlace(dp);
+        else if (this.mode === PlayerMode.Tracing || this.mode === PlayerMode.Closing) {
+            let dp = this.speed.scale(dt);
+            this.pos.addInPlace(dp);
+            let points = this.main.terrain.points;
+            for (let i = 0; i < points.length; i++) {
+                if (this.mode === PlayerMode.Closing || i != this.currentSegmentIndex) {
+                    let ptA = points[i];
+                    let ptB = points[(i + 1) % points.length];
+                    let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+                    let sqrDist = this.pos.subtract(proj).lengthSquared();
+                    if (sqrDist < 1) {
+                        this.currentSegmentIndex = i;
+                        this.mode = PlayerMode.Idle;
+                    }
+                }
+            }
+        }
     }
     redraw() {
         if (!this.svgElement) {

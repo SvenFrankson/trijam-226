@@ -22,6 +22,10 @@ class Main {
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
         }
+    }
+
+    public start(): void {
+        this.player.start();
 
         this._update = (dt: number) => {
             this.player.update(dt);
@@ -59,4 +63,5 @@ class Main {
 window.addEventListener("load", () => {
     let main = new Main();
     main.initialize();
+    main.start();
 });
