@@ -34,6 +34,24 @@ class Player {
         })
     }
 
+    public updateCurrentSegmentIndex(): void {
+        this.currentSegmentIndex = 0;
+        let bestSqrDist = Infinity;
+        let points = this.main.terrain.points;
+        for (let i = 0; i < points.length; i++) {
+            let ptA = points[i];
+            let ptB = points[(i + 1) % points.length];
+            let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+            
+            let sqrDist = this.pos.subtract(proj).lengthSquared();
+            
+            if (sqrDist < bestSqrDist) {
+                bestSqrDist = sqrDist;
+                this.currentSegmentIndex = i;
+            }
+        }
+    }
+
     public update(dt: number): void {
         if (this.mode === PlayerMode.Idle) {
             let points = this.main.terrain.points;
@@ -71,6 +89,7 @@ class Player {
                         this.drawnPoints.push(proj);
                         this.main.terrain.replace(prev, this.currentSegmentIndex, this.drawnPoints);
                         this.mode = PlayerMode.Idle;
+                        this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
                         return;
                     }

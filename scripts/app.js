@@ -125,6 +125,21 @@ class Player {
             }
         });
     }
+    updateCurrentSegmentIndex() {
+        this.currentSegmentIndex = 0;
+        let bestSqrDist = Infinity;
+        let points = this.main.terrain.points;
+        for (let i = 0; i < points.length; i++) {
+            let ptA = points[i];
+            let ptB = points[(i + 1) % points.length];
+            let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+            let sqrDist = this.pos.subtract(proj).lengthSquared();
+            if (sqrDist < bestSqrDist) {
+                bestSqrDist = sqrDist;
+                this.currentSegmentIndex = i;
+            }
+        }
+    }
     update(dt) {
         if (this.mode === PlayerMode.Idle) {
             let points = this.main.terrain.points;
@@ -155,6 +170,7 @@ class Player {
                         this.drawnPoints.push(proj);
                         this.main.terrain.replace(prev, this.currentSegmentIndex, this.drawnPoints);
                         this.mode = PlayerMode.Idle;
+                        this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
                         return;
                     }
@@ -204,6 +220,16 @@ class Terrain {
             this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             this.main.container.appendChild(this.path);
         }
+        if (!this.zero) {
+            this.zero = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            this.zero.setAttribute("r", "5");
+            this.zero.setAttribute("stroke", "black");
+            this.zero.setAttribute("stroke-width", "3");
+            this.zero.setAttribute("fill", "white");
+            this.main.container.appendChild(this.zero);
+        }
+        this.zero.setAttribute("cx", this.points[0].x.toFixed(1));
+        this.zero.setAttribute("cy", this.points[0].y.toFixed(1));
         let d = "";
         if (this.points.length > 0) {
             d = "M" + this.points[0].x + " " + this.points[0].y + " ";
