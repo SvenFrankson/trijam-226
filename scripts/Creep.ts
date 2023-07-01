@@ -56,9 +56,9 @@ class Creep {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "black");
-            this.svgElement.setAttribute("stroke-width", "3");
-            this.svgElement.setAttribute("fill", "red");
+            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke-width", "4");
+            this.svgElement.setAttribute("fill", "#87353D");
             this.main.container.appendChild(this.svgElement);
         }
 

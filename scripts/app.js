@@ -42,9 +42,9 @@ class Creep {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "black");
-            this.svgElement.setAttribute("stroke-width", "3");
-            this.svgElement.setAttribute("fill", "red");
+            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke-width", "4");
+            this.svgElement.setAttribute("fill", "#87353D");
             this.main.container.appendChild(this.svgElement);
         }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
@@ -69,23 +69,41 @@ class Main {
             requestAnimationFrame(this._mainLoop);
         };
         this.terrain = new Terrain(this);
-        this.player = new Player(new Vec2(20, 20), this);
     }
     initialize() {
         this.container = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this.container.id = "main-container";
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
+        this.terrain.points = [
+            new Vec2(20, 20),
+            new Vec2(980, 20),
+            new Vec2(980, 980),
+            new Vec2(20, 980),
+        ];
+        this.terrain.redraw();
+    }
+    setScore(score) {
+        this.score = score;
+        document.getElementsByClassName("score-value")[0].innerText = this.score.toFixed(0).padStart(5, "0");
+        document.getElementsByClassName("score-value")[1].innerText = this.score.toFixed(0).padStart(5, "0");
+    }
+    start() {
+        document.getElementById("play").style.display = "none";
+        document.getElementById("game-over").style.display = "none";
+        this.terrain.points = [
+            new Vec2(20, 20),
+            new Vec2(980, 20),
+            new Vec2(980, 980),
+            new Vec2(20, 980),
+        ];
+        this.container.innerHTML = "";
+        delete this.terrain.path;
+        this.player = new Player(new Vec2(20, 20), this);
         this.creeps = [];
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
         }
-    }
-    setScore(score) {
-        this.score = score;
-        document.getElementById("score-value").innerText = this.score.toFixed(0).padStart(5, "0");
-    }
-    start() {
         this.player.start();
         this._update = (dt) => {
             this.player.update(dt);
@@ -107,12 +125,17 @@ class Main {
     }
     gameover() {
         this.stop();
+        document.getElementById("play").style.display = "block";
+        document.getElementById("game-over").style.display = "block";
     }
 }
 window.addEventListener("load", () => {
+    document.getElementById("game-over").style.display = "none";
     let main = new Main();
     main.initialize();
-    main.start();
+    document.getElementById("play").addEventListener("pointerup", () => {
+        main.start();
+    });
 });
 var PlayerMode;
 (function (PlayerMode) {
@@ -206,9 +229,9 @@ class Player {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "black");
-            this.svgElement.setAttribute("stroke-width", "3");
-            this.svgElement.setAttribute("fill", "yellow");
+            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke-width", "4");
+            this.svgElement.setAttribute("fill", "#7C9885");
             this.main.container.appendChild(this.svgElement);
         }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
@@ -225,9 +248,9 @@ class Player {
                 d += "L" + points[i].x + " " + points[i].y + " ";
             }
         }
-        this.playerDrawnPath.setAttribute("stroke", "grey");
+        this.playerDrawnPath.setAttribute("stroke", "#69747C");
         this.playerDrawnPath.setAttribute("fill", "none");
-        this.playerDrawnPath.setAttribute("stroke-width", "5");
+        this.playerDrawnPath.setAttribute("stroke-width", "4");
         this.playerDrawnPath.setAttribute("d", d);
     }
 }
@@ -260,16 +283,6 @@ class Terrain {
             this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             this.main.container.appendChild(this.path);
         }
-        if (!this.zero) {
-            this.zero = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            this.zero.setAttribute("r", "5");
-            this.zero.setAttribute("stroke", "black");
-            this.zero.setAttribute("stroke-width", "3");
-            this.zero.setAttribute("fill", "white");
-            this.main.container.appendChild(this.zero);
-        }
-        this.zero.setAttribute("cx", this.points[0].x.toFixed(1));
-        this.zero.setAttribute("cy", this.points[0].y.toFixed(1));
         let d = "";
         if (this.points.length > 0) {
             d = "M" + this.points[0].x + " " + this.points[0].y + " ";
@@ -278,9 +291,9 @@ class Terrain {
             }
             d += "Z";
         }
-        this.path.setAttribute("stroke", "black");
-        this.path.setAttribute("fill", "none");
-        this.path.setAttribute("stroke-width", "5");
+        this.path.setAttribute("stroke", "#343434");
+        this.path.setAttribute("fill", "#B5B682");
+        this.path.setAttribute("stroke-width", "4");
         this.path.setAttribute("d", d);
     }
 }

@@ -8,7 +8,6 @@ class Main {
 
     constructor() {
         this.terrain = new Terrain(this);
-        this.player = new Player(new Vec2(20, 20), this);
     }
 
     public initialize(): void {
@@ -17,18 +16,37 @@ class Main {
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
 
-        this.creeps = [];
-        for (let n = 0; n < 10; n++) {
-            this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
-        }
+        this.terrain.points = [
+            new Vec2(20, 20),
+            new Vec2(980, 20),
+            new Vec2(980, 980),
+            new Vec2(20, 980),
+        ];
+        this.terrain.redraw();
     }
 
     public setScore(score: number): void {
         this.score = score;
-        document.getElementById("score-value").innerText = this.score.toFixed(0).padStart(5, "0");
+        (document.getElementsByClassName("score-value")[0] as HTMLElement).innerText = this.score.toFixed(0).padStart(5, "0");
+        (document.getElementsByClassName("score-value")[1] as HTMLElement).innerText = this.score.toFixed(0).padStart(5, "0");
     }
 
     public start(): void {
+        document.getElementById("play").style.display = "none";
+        document.getElementById("game-over").style.display = "none";
+        this.terrain.points = [
+            new Vec2(20, 20),
+            new Vec2(980, 20),
+            new Vec2(980, 980),
+            new Vec2(20, 980),
+        ];
+        this.container.innerHTML = "";
+        delete this.terrain.path;
+        this.player = new Player(new Vec2(20, 20), this);
+        this.creeps = [];
+        for (let n = 0; n < 10; n++) {
+            this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
+        }
         this.player.start();
 
         this._update = (dt: number) => {
@@ -69,13 +87,18 @@ class Main {
 
     public gameover(): void {
         this.stop();
+        document.getElementById("play").style.display = "block";
+        document.getElementById("game-over").style.display = "block";
     }
 
     private _update: (dt: number) => void;
 }
 
 window.addEventListener("load", () => {
+    document.getElementById("game-over").style.display = "none";
     let main = new Main();
     main.initialize();
-    main.start();
+    document.getElementById("play").addEventListener("pointerup", () => {
+        main.start();
+    });
 });

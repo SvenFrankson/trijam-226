@@ -1,6 +1,5 @@
 class Terrain {
 
-    public zero: SVGCircleElement;
     public path: SVGPathElement;
     public points: Vec2[] = [];
 
@@ -32,17 +31,6 @@ class Terrain {
             this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             this.main.container.appendChild(this.path);
         }
-        if (!this.zero) {
-            this.zero = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            this.zero.setAttribute("r", "5");
-            this.zero.setAttribute("stroke", "black");
-            this.zero.setAttribute("stroke-width", "3");
-            this.zero.setAttribute("fill", "white");
-            this.main.container.appendChild(this.zero);
-        }
-
-        this.zero.setAttribute("cx", this.points[0].x.toFixed(1));
-        this.zero.setAttribute("cy", this.points[0].y.toFixed(1));
 
         let d = "";
         if (this.points.length > 0) {
@@ -53,9 +41,9 @@ class Terrain {
             d += "Z";
         }
 
-        this.path.setAttribute("stroke", "black");
-        this.path.setAttribute("fill", "none");
-        this.path.setAttribute("stroke-width", "5");
+        this.path.setAttribute("stroke", "#343434");
+        this.path.setAttribute("fill", "#B5B682");
+        this.path.setAttribute("stroke-width", "4");
         this.path.setAttribute("d", d);
     }
 }

@@ -106,9 +106,9 @@ class Player {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "black");
-            this.svgElement.setAttribute("stroke-width", "3");
-            this.svgElement.setAttribute("fill", "yellow");
+            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke-width", "4");
+            this.svgElement.setAttribute("fill", "#7C9885");
             this.main.container.appendChild(this.svgElement);
         }
 
@@ -129,9 +129,9 @@ class Player {
             }
         }
 
-        this.playerDrawnPath.setAttribute("stroke", "grey");
+        this.playerDrawnPath.setAttribute("stroke", "#69747C");
         this.playerDrawnPath.setAttribute("fill", "none");
-        this.playerDrawnPath.setAttribute("stroke-width", "5");
+        this.playerDrawnPath.setAttribute("stroke-width", "4");
         this.playerDrawnPath.setAttribute("d", d);
     }
 }
