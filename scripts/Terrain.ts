@@ -12,6 +12,20 @@ class Terrain {
         ];
     }
 
+    public replace(start: number, end: number, points: Vec2[]): void {
+        if (start === end) {
+            this.points.splice(start + 1, 0, ...points.reverse());
+        }
+        else if (end < start) {
+            this.points.splice(end + 1, start - end, ...points.reverse());
+        }
+        else if (start < end) {
+            this.points = this.points.slice(start + 1);
+            this.points = this.points.splice(0, end - start);
+            this.points.push(...points.reverse());
+        }
+    }
+
     public redraw(): void {
         if (!this.path) {
             this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");

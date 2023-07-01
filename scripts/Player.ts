@@ -12,7 +12,7 @@ class Player {
     public radius: number = 15;
     public svgElement: SVGCircleElement;
     public currentSegmentIndex: number = 0;
-    public drawnPoints: Vec2[];
+    public drawnPoints: Vec2[] = [];
 
     constructor(public pos: Vec2, public main: Main) {
         this.main;
@@ -22,6 +22,7 @@ class Player {
     public start(): void {
         document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
             if (ev.code === "Space") {
+                this.drawnPoints.push(this.pos.clone());
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
                     this.mode = PlayerMode.Tracing;  
@@ -64,9 +65,14 @@ class Player {
                     
                     let sqrDist = this.pos.subtract(proj).lengthSquared();
                     
-                    if (sqrDist < 1) {
+                    if (sqrDist < 5) {
+                        let prev = this.currentSegmentIndex;
                         this.currentSegmentIndex = i;
+                        this.drawnPoints.push(proj);
+                        this.main.terrain.replace(prev, this.currentSegmentIndex, this.drawnPoints);
                         this.mode = PlayerMode.Idle;
+                        this.drawnPoints = [];
+                        return;
                     }
                 }
             }

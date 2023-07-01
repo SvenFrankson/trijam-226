@@ -107,12 +107,14 @@ class Player {
         this.speedValue = 200;
         this.radius = 15;
         this.currentSegmentIndex = 0;
+        this.drawnPoints = [];
         this.main;
         this.speed = new Vec2(0, 0);
     }
     start() {
         document.body.addEventListener("keydown", (ev) => {
             if (ev.code === "Space") {
+                this.drawnPoints.push(this.pos.clone());
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
                     this.mode = PlayerMode.Tracing;
@@ -147,9 +149,14 @@ class Player {
                     let ptB = points[(i + 1) % points.length];
                     let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
                     let sqrDist = this.pos.subtract(proj).lengthSquared();
-                    if (sqrDist < 1) {
+                    if (sqrDist < 5) {
+                        let prev = this.currentSegmentIndex;
                         this.currentSegmentIndex = i;
+                        this.drawnPoints.push(proj);
+                        this.main.terrain.replace(prev, this.currentSegmentIndex, this.drawnPoints);
                         this.mode = PlayerMode.Idle;
+                        this.drawnPoints = [];
+                        return;
                     }
                 }
             }
@@ -178,6 +185,19 @@ class Terrain {
             new Vec2(980, 980),
             new Vec2(20, 980),
         ];
+    }
+    replace(start, end, points) {
+        if (start === end) {
+            this.points.splice(start + 1, 0, ...points.reverse());
+        }
+        else if (end < start) {
+            this.points.splice(end + 1, start - end, ...points.reverse());
+        }
+        else if (start < end) {
+            this.points = this.points.slice(start + 1);
+            this.points = this.points.splice(0, end - start);
+            this.points.push(...points.reverse());
+        }
     }
     redraw() {
         if (!this.path) {
