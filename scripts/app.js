@@ -54,6 +54,7 @@ class Creep {
 class Main {
     constructor() {
         this.creeps = [];
+        this.score = 0;
         this._lastT = 0;
         this._mainLoop = () => {
             let dt = 0;
@@ -75,11 +76,14 @@ class Main {
         this.container.id = "main-container";
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
-        this.testCreep = new Creep(new Vec2(500, 500), this);
         this.creeps = [];
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
         }
+    }
+    setScore(score) {
+        this.score = score;
+        document.getElementById("score-value").innerText = this.score.toFixed(0).padStart(5, "0");
     }
     start() {
         this.player.start();
@@ -186,6 +190,9 @@ class Player {
                         this.currentSegmentIndex = i;
                         this.drawnPoints.push(proj);
                         this.main.terrain.replace(prev, this.currentSegmentIndex, this.drawnPoints);
+                        let surface = Vec2.BBoxSurface(...this.drawnPoints);
+                        surface = Math.floor(surface / 100);
+                        this.main.setScore(this.main.score + Math.pow(surface, 1.2));
                         this.mode = PlayerMode.Idle;
                         this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
@@ -354,5 +361,14 @@ class Vec2 {
             }
         }
         return proj;
+    }
+    static BBoxSurface(...points) {
+        let min = points.reduce((v1, v2) => {
+            return new Vec2(Math.min(v1.x, v2.x), Math.min(v1.y, v2.y));
+        });
+        let max = points.reduce((v1, v2) => {
+            return new Vec2(Math.max(v1.x, v2.x), Math.max(v1.y, v2.y));
+        });
+        return (max.x - min.x) * (max.y - min.y);
     }
 }

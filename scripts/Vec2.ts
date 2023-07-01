@@ -104,4 +104,17 @@ class Vec2 {
         }
         return proj;
     }
+
+    public static BBoxSurface(...points: Vec2[]): number {
+        let min = points.reduce((v1, v2) => { return new Vec2(
+            Math.min(v1.x, v2.x),
+            Math.min(v1.y, v2.y)
+        )});
+        let max = points.reduce((v1, v2) => { return new Vec2(
+            Math.max(v1.x, v2.x),
+            Math.max(v1.y, v2.y)
+        )});
+
+        return (max.x - min.x) * (max.y - min.y); 
+    }
 }

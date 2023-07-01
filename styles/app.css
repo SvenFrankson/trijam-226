@@ -5,3 +5,12 @@
     left: calc((100vw - min(90vw, 90vh)) * 0.5);
     top: calc((100vh - min(90vw, 90vh)) * 0.5);
 }
+
+#score {
+    position: fixed;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 24px;
+    right: calc((100vw - min(90vw, 90vh)) * 0.5 + 20px);
+    top: calc((100vh - min(90vw, 90vh)) * 0.5 - 15px);
+}

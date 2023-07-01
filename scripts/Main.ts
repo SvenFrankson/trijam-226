@@ -4,7 +4,7 @@ class Main {
     public terrain: Terrain;
     public player: Player;
     public creeps: Creep[] = [];
-    public testCreep: Creep;
+    public score: number = 0;
 
     constructor() {
         this.terrain = new Terrain(this);
@@ -17,11 +17,15 @@ class Main {
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
 
-        this.testCreep = new Creep(new Vec2(500, 500), this);
         this.creeps = [];
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
         }
+    }
+
+    public setScore(score: number): void {
+        this.score = score;
+        document.getElementById("score-value").innerText = this.score.toFixed(0).padStart(5, "0");
     }
 
     public start(): void {
