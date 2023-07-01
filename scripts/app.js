@@ -5,7 +5,7 @@ class Creep {
         this.radius = 10;
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
-        this.speed.normalizeInPlace().scaleInPlace(200);
+        this.speed.normalizeInPlace().scaleInPlace(100);
     }
     update(dt) {
         let dp = this.speed.scale(dt);
@@ -91,6 +91,7 @@ class Main {
     start() {
         document.getElementById("play").style.display = "none";
         document.getElementById("game-over").style.display = "none";
+        document.getElementById("credit").style.display = "none";
         this.terrain.points = [
             new Vec2(20, 20),
             new Vec2(980, 20),
@@ -127,6 +128,7 @@ class Main {
         this.stop();
         document.getElementById("play").style.display = "block";
         document.getElementById("game-over").style.display = "block";
+        document.getElementById("credit").style.display = "block";
     }
 }
 window.addEventListener("load", () => {

@@ -12,7 +12,7 @@ class Creep {
             Math.random() - 0.5,
             Math.random() - 0.5,
         );
-        this.speed.normalizeInPlace().scaleInPlace(200);
+        this.speed.normalizeInPlace().scaleInPlace(100);
     }
 
     public update(dt: number): void {

@@ -34,6 +34,7 @@ class Main {
     public start(): void {
         document.getElementById("play").style.display = "none";
         document.getElementById("game-over").style.display = "none";
+        document.getElementById("credit").style.display = "none";
         this.terrain.points = [
             new Vec2(20, 20),
             new Vec2(980, 20),
@@ -89,6 +90,7 @@ class Main {
         this.stop();
         document.getElementById("play").style.display = "block";
         document.getElementById("game-over").style.display = "block";
+        document.getElementById("credit").style.display = "block";
     }
 
     private _update: (dt: number) => void;
