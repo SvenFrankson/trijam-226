@@ -3,6 +3,7 @@ class Main {
     public container: SVGElement;
     public terrain: Terrain;
     public creeps: Creep[] = [];
+    public testCreep: Creep;
 
     constructor() {
         this.terrain = new Terrain(this);
@@ -14,9 +15,11 @@ class Main {
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
 
-        this.creeps = [
-            new Creep(new Vec2(500, 500), this)
-        ];
+        this.testCreep = new Creep(new Vec2(500, 500), this);
+        this.creeps = [];
+        for (let n = 0; n < 10; n++) {
+            this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
+        }
 
         this._update = (dt: number) => {
             this.creeps.forEach(creep => {
@@ -27,6 +30,7 @@ class Main {
             this.creeps.forEach(creep => {
                 creep.redraw();
             });
+            //this.testCreep.redraw();
         }
         this._mainLoop();
     }
