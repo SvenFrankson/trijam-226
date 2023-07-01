@@ -75,6 +75,8 @@ class Main {
         this.container.id = "main-container";
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
+        this.player = new Player(new Vec2(20, 20), this);
+        this.player.initialize();
         this.terrain.points = [
             new Vec2(20, 20),
             new Vec2(980, 20),
@@ -82,6 +84,7 @@ class Main {
             new Vec2(20, 980),
         ];
         this.terrain.redraw();
+        this._mainLoop();
     }
     setScore(score) {
         this.score = score;
@@ -98,9 +101,15 @@ class Main {
             new Vec2(980, 980),
             new Vec2(20, 980),
         ];
+        this.setScore(0);
+        this.player.drawnPoints = [];
+        this.player.currentSegmentIndex = 0;
+        this.player.speed.x = 0;
+        this.player.speed.y = 0;
         this.container.innerHTML = "";
         delete this.terrain.path;
-        this.player = new Player(new Vec2(20, 20), this);
+        delete this.player.playerDrawnPath;
+        delete this.player.svgElement;
         this.creeps = [];
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
@@ -118,7 +127,6 @@ class Main {
             });
             //this.testCreep.redraw();
         };
-        this._mainLoop();
     }
     stop() {
         this._update = () => {
@@ -157,7 +165,7 @@ class Player {
         this.main;
         this.speed = new Vec2(0, 0);
     }
-    start() {
+    initialize() {
         document.body.addEventListener("keydown", (ev) => {
             if (ev.code === "Space") {
                 this.drawnPoints.push(this.pos.clone());
@@ -170,6 +178,20 @@ class Player {
                 }
             }
         });
+        this.main.container.addEventListener("pointerup", () => {
+            this.drawnPoints.push(this.pos.clone());
+            this.speed.rotateInPlace(Math.PI * 0.5);
+            if (this.mode === PlayerMode.Idle) {
+                this.mode = PlayerMode.Tracing;
+            }
+            else {
+                this.mode = PlayerMode.Closing;
+            }
+        });
+    }
+    start() {
+        this.pos.x = 20;
+        this.pos.y = 20;
     }
     updateCurrentSegmentIndex() {
         this.currentSegmentIndex = 0;
@@ -228,6 +250,10 @@ class Player {
         }
     }
     redraw() {
+        if (!this.playerDrawnPath) {
+            this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            this.main.container.appendChild(this.playerDrawnPath);
+        }
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
@@ -238,10 +264,6 @@ class Player {
         }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
-        if (!this.playerDrawnPath) {
-            this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.main.container.appendChild(this.playerDrawnPath);
-        }
         let d = "";
         let points = [...this.drawnPoints, this.pos];
         if (points.length > 0) {

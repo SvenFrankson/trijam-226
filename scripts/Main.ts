@@ -16,6 +16,9 @@ class Main {
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
 
+        this.player = new Player(new Vec2(20, 20), this);
+        this.player.initialize();
+
         this.terrain.points = [
             new Vec2(20, 20),
             new Vec2(980, 20),
@@ -23,6 +26,8 @@ class Main {
             new Vec2(20, 980),
         ];
         this.terrain.redraw();
+
+        this._mainLoop();
     }
 
     public setScore(score: number): void {
@@ -41,9 +46,15 @@ class Main {
             new Vec2(980, 980),
             new Vec2(20, 980),
         ];
+        this.setScore(0);
+        this.player.drawnPoints = [];
+        this.player.currentSegmentIndex = 0;
+        this.player.speed.x = 0;
+        this.player.speed.y = 0;
         this.container.innerHTML = "";
         delete this.terrain.path;
-        this.player = new Player(new Vec2(20, 20), this);
+        delete this.player.playerDrawnPath;
+        delete this.player.svgElement;
         this.creeps = [];
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
@@ -63,7 +74,6 @@ class Main {
             });
             //this.testCreep.redraw();
         }
-        this._mainLoop();
     }
 
     public stop(): void {

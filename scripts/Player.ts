@@ -20,7 +20,7 @@ class Player {
         this.speed = new Vec2(0, 0);
     }
 
-    public start(): void {
+    public initialize(): void {
         document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
             if (ev.code === "Space") {
                 this.drawnPoints.push(this.pos.clone());
@@ -32,7 +32,23 @@ class Player {
                     this.mode = PlayerMode.Closing;
                 }
             }
-        })
+        });
+
+        this.main.container.addEventListener("pointerup", () => {
+            this.drawnPoints.push(this.pos.clone());
+            this.speed.rotateInPlace(Math.PI * 0.5);
+            if (this.mode === PlayerMode.Idle) {
+                this.mode = PlayerMode.Tracing;  
+            }
+            else {
+                this.mode = PlayerMode.Closing;
+            }
+        });
+    }
+
+    public start(): void {
+        this.pos.x = 20;
+        this.pos.y = 20;
     }
 
     public updateCurrentSegmentIndex(): void {
@@ -103,6 +119,12 @@ class Player {
     }
 
     public redraw(): void {
+
+        if (!this.playerDrawnPath) {
+            this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            this.main.container.appendChild(this.playerDrawnPath);
+        }
+
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
@@ -114,11 +136,6 @@ class Player {
 
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
-
-        if (!this.playerDrawnPath) {
-            this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.main.container.appendChild(this.playerDrawnPath);
-        }
 
         let d = "";
         let points = [...this.drawnPoints, this.pos];
