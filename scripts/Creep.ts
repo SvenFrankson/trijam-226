@@ -16,6 +16,8 @@ class Creep {
     }
 
     public update(dt: number): void {
+        let flipX: boolean = false;
+        let flipY: boolean = false;
         let dp = this.speed.scale(dt);
         this.pos.addInPlace(dp);
         let points = this.main.terrain.points
@@ -29,13 +31,22 @@ class Creep {
             if (sqrDist < this.radius * this.radius) {
                 let n = ptB.subtract(ptA).rotateInPlace(Math.PI / 2);
                 if (Math.abs(n.x) > Math.abs(n.y)) {
-                    this.speed.x *= -1;
+                    flipX = true;
                 }
                 else {
-                    this.speed.y *= -1;
+                    flipY = true;
                 }
-                this.pos.subtractInPlace(dp);
             }
+        }
+
+        if (flipX || flipY) {
+            if (flipX) {
+                this.speed.x *= -1;
+            }
+            if (flipY) {
+                this.speed.y *= -1;
+            }
+            this.pos.subtractInPlace(dp.scale(1));
         }
 
         points = [...this.main.player.drawnPoints, this.main.player.pos];

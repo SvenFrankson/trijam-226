@@ -10,6 +10,8 @@ class Creep {
         this.speed.normalizeInPlace().scaleInPlace(100);
     }
     update(dt) {
+        let flipX = false;
+        let flipY = false;
         let dp = this.speed.scale(dt);
         this.pos.addInPlace(dp);
         let points = this.main.terrain.points;
@@ -21,13 +23,21 @@ class Creep {
             if (sqrDist < this.radius * this.radius) {
                 let n = ptB.subtract(ptA).rotateInPlace(Math.PI / 2);
                 if (Math.abs(n.x) > Math.abs(n.y)) {
-                    this.speed.x *= -1;
+                    flipX = true;
                 }
                 else {
-                    this.speed.y *= -1;
+                    flipY = true;
                 }
-                this.pos.subtractInPlace(dp);
             }
+        }
+        if (flipX || flipY) {
+            if (flipX) {
+                this.speed.x *= -1;
+            }
+            if (flipY) {
+                this.speed.y *= -1;
+            }
+            this.pos.subtractInPlace(dp.scale(1));
         }
         points = [...this.main.player.drawnPoints, this.main.player.pos];
         for (let i = 0; i < points.length - 1; i++) {
@@ -160,7 +170,7 @@ class Player {
         this.pos = pos;
         this.main = main;
         this.mode = PlayerMode.Idle;
-        this.speedValue = 200;
+        this.speedValue = 500;
         this.radius = 15;
         this.currentSegmentIndex = 0;
         this.drawnPoints = [];
