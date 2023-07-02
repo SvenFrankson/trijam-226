@@ -21,8 +21,8 @@ class Player {
     }
 
     public initialize(): void {
-        document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
-            if (ev.code === "Space") {
+        let action = () => {
+            if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
                 this.drawnPoints.push(this.pos.clone());
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
@@ -32,17 +32,15 @@ class Player {
                     this.mode = PlayerMode.Closing;
                 }
             }
+        }
+        document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
+            if (ev.code === "Space") {
+                action();
+            }
         });
 
         this.main.container.addEventListener("pointerup", () => {
-            this.drawnPoints.push(this.pos.clone());
-            this.speed.rotateInPlace(Math.PI * 0.5);
-            if (this.mode === PlayerMode.Idle) {
-                this.mode = PlayerMode.Tracing;  
-            }
-            else {
-                this.mode = PlayerMode.Closing;
-            }
+            action();
         });
     }
 
@@ -91,6 +89,18 @@ class Player {
             let dp = this.speed.scale(dt);
             this.pos.addInPlace(dp);
 
+            for (let i = 0; i < this.drawnPoints.length - 2; i++) {
+                let ptA = this.drawnPoints[i];
+                let ptB = this.drawnPoints[i + 1];
+                let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+                
+                let sqrDist = this.pos.subtract(proj).lengthSquared();
+                
+                if (sqrDist < this.radius * this.radius) {
+                    this.main.gameover();
+                }
+            }
+
             let points = this.main.terrain.points
             for (let i = 0; i < points.length; i++) {
                 if (this.mode === PlayerMode.Closing || i != this.currentSegmentIndex) {
@@ -128,9 +138,9 @@ class Player {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke", "white");
             this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", "#7C9885");
+            this.svgElement.setAttribute("fill", playerColor);
             this.main.container.appendChild(this.svgElement);
         }
 
@@ -146,7 +156,7 @@ class Player {
             }
         }
 
-        this.playerDrawnPath.setAttribute("stroke", "#69747C");
+        this.playerDrawnPath.setAttribute("stroke", "white");
         this.playerDrawnPath.setAttribute("fill", "none");
         this.playerDrawnPath.setAttribute("stroke-width", "4");
         this.playerDrawnPath.setAttribute("d", d);

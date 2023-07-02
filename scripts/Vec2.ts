@@ -11,6 +11,17 @@ class Vec2 {
         return new Vec2(this.x, this.y);
     }
 
+    public static DistanceSquared(a: Vec2, b: Vec2): number {
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+
+        return dx * dx + dy * dy;
+    }
+
+    public static Distance(a: Vec2, b: Vec2): number {
+        return Math.sqrt(Vec2.DistanceSquared(a, b));
+    }
+
     public static Dot(a: Vec2, b: Vec2): number {
         return a.x * b.x + a.y * b.y;
     }

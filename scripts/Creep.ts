@@ -1,7 +1,7 @@
 class Creep {
 
     public speed: Vec2;
-    public radius: number = 10;
+    public radius: number = 15;
     public svgElement: SVGCircleElement;
 
     public testCreep: Creep;
@@ -56,9 +56,9 @@ class Creep {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke", "white");
             this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", "#87353D");
+            this.svgElement.setAttribute("fill", creepColor);
             this.main.container.appendChild(this.svgElement);
         }
 

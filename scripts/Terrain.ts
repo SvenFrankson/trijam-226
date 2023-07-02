@@ -41,8 +41,8 @@ class Terrain {
             d += "Z";
         }
 
-        this.path.setAttribute("stroke", "#343434");
-        this.path.setAttribute("fill", "#B5B682");
+        this.path.setAttribute("stroke", "white");
+        this.path.setAttribute("fill", "#091833");
         this.path.setAttribute("stroke-width", "4");
         this.path.setAttribute("d", d);
     }

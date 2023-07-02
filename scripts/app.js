@@ -1,8 +1,10 @@
+var playerColor = "#0abdc6";
+var creepColor = "#ea00d9";
 class Creep {
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
-        this.radius = 10;
+        this.radius = 15;
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
         this.speed.normalizeInPlace().scaleInPlace(100);
@@ -42,9 +44,9 @@ class Creep {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke", "white");
             this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", "#87353D");
+            this.svgElement.setAttribute("fill", creepColor);
             this.main.container.appendChild(this.svgElement);
         }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
@@ -166,8 +168,8 @@ class Player {
         this.speed = new Vec2(0, 0);
     }
     initialize() {
-        document.body.addEventListener("keydown", (ev) => {
-            if (ev.code === "Space") {
+        let action = () => {
+            if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
                 this.drawnPoints.push(this.pos.clone());
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
@@ -177,16 +179,14 @@ class Player {
                     this.mode = PlayerMode.Closing;
                 }
             }
+        };
+        document.body.addEventListener("keydown", (ev) => {
+            if (ev.code === "Space") {
+                action();
+            }
         });
         this.main.container.addEventListener("pointerup", () => {
-            this.drawnPoints.push(this.pos.clone());
-            this.speed.rotateInPlace(Math.PI * 0.5);
-            if (this.mode === PlayerMode.Idle) {
-                this.mode = PlayerMode.Tracing;
-            }
-            else {
-                this.mode = PlayerMode.Closing;
-            }
+            action();
         });
     }
     start() {
@@ -225,6 +225,15 @@ class Player {
         else if (this.mode === PlayerMode.Tracing || this.mode === PlayerMode.Closing) {
             let dp = this.speed.scale(dt);
             this.pos.addInPlace(dp);
+            for (let i = 0; i < this.drawnPoints.length - 2; i++) {
+                let ptA = this.drawnPoints[i];
+                let ptB = this.drawnPoints[i + 1];
+                let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
+                let sqrDist = this.pos.subtract(proj).lengthSquared();
+                if (sqrDist < this.radius * this.radius) {
+                    this.main.gameover();
+                }
+            }
             let points = this.main.terrain.points;
             for (let i = 0; i < points.length; i++) {
                 if (this.mode === PlayerMode.Closing || i != this.currentSegmentIndex) {
@@ -257,9 +266,9 @@ class Player {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "#343434");
+            this.svgElement.setAttribute("stroke", "white");
             this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", "#7C9885");
+            this.svgElement.setAttribute("fill", playerColor);
             this.main.container.appendChild(this.svgElement);
         }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
@@ -272,7 +281,7 @@ class Player {
                 d += "L" + points[i].x + " " + points[i].y + " ";
             }
         }
-        this.playerDrawnPath.setAttribute("stroke", "#69747C");
+        this.playerDrawnPath.setAttribute("stroke", "white");
         this.playerDrawnPath.setAttribute("fill", "none");
         this.playerDrawnPath.setAttribute("stroke-width", "4");
         this.playerDrawnPath.setAttribute("d", d);
@@ -315,8 +324,8 @@ class Terrain {
             }
             d += "Z";
         }
-        this.path.setAttribute("stroke", "#343434");
-        this.path.setAttribute("fill", "#B5B682");
+        this.path.setAttribute("stroke", "white");
+        this.path.setAttribute("fill", "#091833");
         this.path.setAttribute("stroke-width", "4");
         this.path.setAttribute("d", d);
     }
@@ -328,6 +337,14 @@ class Vec2 {
     }
     clone() {
         return new Vec2(this.x, this.y);
+    }
+    static DistanceSquared(a, b) {
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        return dx * dx + dy * dy;
+    }
+    static Distance(a, b) {
+        return Math.sqrt(Vec2.DistanceSquared(a, b));
     }
     static Dot(a, b) {
         return a.x * b.x + a.y * b.y;
