@@ -7,7 +7,7 @@ enum PlayerMode {
 class Player {
 
     public mode: PlayerMode = PlayerMode.Idle;
-    public speedValue: number = 500;
+    public speedValue: number = 200;
     public speed: Vec2;
     public radius: number = 15;
     public svgElement: SVGCircleElement;

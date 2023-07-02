@@ -170,7 +170,7 @@ class Player {
         this.pos = pos;
         this.main = main;
         this.mode = PlayerMode.Idle;
-        this.speedValue = 500;
+        this.speedValue = 200;
         this.radius = 15;
         this.currentSegmentIndex = 0;
         this.drawnPoints = [];
