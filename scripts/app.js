@@ -7,7 +7,10 @@ class Creep {
         this.radius = 15;
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
-        this.speed.normalizeInPlace().scaleInPlace(100);
+        let s = Math.random() * 100 + 50;
+        this.speed.normalizeInPlace().scaleInPlace(s);
+        let f = 1 - s / 150;
+        this.radius = 10 + f * 10;
     }
     update(dt) {
         let flipX = false;
@@ -37,6 +40,7 @@ class Creep {
             if (flipY) {
                 this.speed.y *= -1;
             }
+            this.speed.rotateInPlace(Math.random() * Math.PI * 0.2 - Math.PI * 0.1);
             this.pos.subtractInPlace(dp.scale(1));
         }
         points = [...this.main.player.drawnPoints, this.main.player.pos];
