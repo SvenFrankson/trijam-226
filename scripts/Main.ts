@@ -53,6 +53,7 @@ class Main {
         this.player.speed.y = 0;
         this.container.innerHTML = "";
         delete this.terrain.path;
+        delete this.terrain.pathCut;
         delete this.player.playerDrawnPath;
         delete this.player.svgElement;
         this.creeps = [];

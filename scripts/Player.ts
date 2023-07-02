@@ -114,8 +114,7 @@ class Player {
                         let prev = this.currentSegmentIndex;
                         this.currentSegmentIndex = i;
                         this.drawnPoints.push(proj);
-                        this.main.terrain.replace(prev, this.currentSegmentIndex, this.drawnPoints);
-                        let surface = Vec2.BBoxSurface(...this.drawnPoints);
+                        let surface = this.main.terrain.replace(prev, this.currentSegmentIndex, this.drawnPoints);
                         surface = Math.floor(surface / 100);
                         this.main.setScore(this.main.score + Math.pow(surface, 1.2));
                         this.mode = PlayerMode.Idle;
