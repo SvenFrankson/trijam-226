@@ -97,10 +97,18 @@ class Main {
         requestAnimationFrame(this._mainLoop);
     }
 
-    public gameover(): void {
+    public gameover(success?: boolean): void {
         this.stop();
         document.getElementById("play").style.display = "block";
         document.getElementById("game-over").style.display = "block";
+        if (success) {
+            document.getElementById("game-over").style.backgroundColor = "#0abdc6";
+            document.getElementById("success-value").innerText = "SUCCESS";
+        }
+        else {
+            document.getElementById("game-over").style.backgroundColor = "#711c91";
+            document.getElementById("success-value").innerText = "GAME OVER";
+        }
         document.getElementById("credit").style.display = "block";
     }
 

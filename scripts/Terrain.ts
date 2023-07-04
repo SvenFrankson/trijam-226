@@ -49,6 +49,11 @@ class Terrain {
                 this.pointsCut = pointsOutside;
             }
 
+            
+            if (Math.max(inSurface, outSurface) < 960 * 960 * 0.2) {
+                this.main.gameover(true);
+            }
+
             this.removePathCut();
             return Vec2.BBoxSurface(...this.pointsCut);
         }
