@@ -1,15 +1,10 @@
 var playerColor = "#0abdc6";
 var creepColor = "#ea00d9";
 class Creep {
-    pos;
-    main;
-    speed;
-    radius = 15;
-    svgElement;
-    testCreep;
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
+        this.radius = 15;
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
         let s = Math.random() * 100 + 50;
@@ -73,12 +68,22 @@ class Creep {
     }
 }
 class Main {
-    container;
-    terrain;
-    player;
-    creeps = [];
-    score = 0;
     constructor() {
+        this.creeps = [];
+        this.score = 0;
+        this._lastT = 0;
+        this._mainLoop = () => {
+            let dt = 0;
+            let t = performance.now();
+            if (isFinite(this._lastT)) {
+                dt = (t - this._lastT) / 1000;
+            }
+            this._lastT = t;
+            if (this._update) {
+                this._update(dt);
+            }
+            requestAnimationFrame(this._mainLoop);
+        };
         this.terrain = new Terrain(this);
     }
     initialize() {
@@ -107,10 +112,10 @@ class Main {
         document.getElementById("game-over").style.display = "none";
         document.getElementById("credit").style.display = "none";
         this.terrain.points = [
-            new Vec2(20, 20),
-            new Vec2(980, 20),
-            new Vec2(980, 980),
-            new Vec2(20, 980),
+            new Vec2(40, 40),
+            new Vec2(960, 40),
+            new Vec2(960, 960),
+            new Vec2(40, 960),
         ];
         this.setScore(0);
         this.player.drawnPoints = [];
@@ -144,19 +149,6 @@ class Main {
         this._update = () => {
         };
     }
-    _lastT = 0;
-    _mainLoop = () => {
-        let dt = 0;
-        let t = performance.now();
-        if (isFinite(this._lastT)) {
-            dt = (t - this._lastT) / 1000;
-        }
-        this._lastT = t;
-        if (this._update) {
-            this._update(dt);
-        }
-        requestAnimationFrame(this._mainLoop);
-    };
     gameover(success) {
         this.stop();
         document.getElementById("play").style.display = "block";
@@ -171,7 +163,6 @@ class Main {
         }
         document.getElementById("credit").style.display = "block";
     }
-    _update;
 }
 window.addEventListener("load", () => {
     document.getElementById("game-over").style.display = "none";
@@ -188,19 +179,14 @@ var PlayerMode;
     PlayerMode[PlayerMode["Closing"] = 2] = "Closing";
 })(PlayerMode || (PlayerMode = {}));
 class Player {
-    pos;
-    main;
-    mode = PlayerMode.Idle;
-    speedValue = 200;
-    speed;
-    radius = 15;
-    svgElement;
-    playerDrawnPath;
-    currentSegmentIndex = 0;
-    drawnPoints = [];
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
+        this.mode = PlayerMode.Idle;
+        this.speedValue = 200;
+        this.radius = 15;
+        this.currentSegmentIndex = 0;
+        this.drawnPoints = [];
         this.main;
         this.speed = new Vec2(0, 0);
     }
@@ -307,8 +293,30 @@ class Player {
             this.svgElement.setAttribute("fill", playerColor);
             this.main.container.appendChild(this.svgElement);
         }
+        if (!this.svgDirElement) {
+            this.svgDirElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            let r = this.radius.toFixed(0);
+            let r2 = (this.radius * 2).toFixed(0);
+            let r3 = (this.radius * 3).toFixed(0);
+            let dDir = "M-10 -25 L0 -35 L10 -25 Z";
+            this.svgDirElement.setAttribute("d", dDir);
+            this.svgDirElement.setAttribute("stroke", "white");
+            this.svgDirElement.setAttribute("stroke-width", "4");
+            this.svgDirElement.setAttribute("stroke-linejoin", "round");
+            this.svgDirElement.setAttribute("fill", playerColor);
+            this.main.container.appendChild(this.svgDirElement);
+        }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
+        let dir = 0;
+        if (Math.abs(this.speed.x) > Math.abs(this.speed.y)) {
+            dir = this.speed.x > 0 ? 0 : 2;
+        }
+        else {
+            dir = this.speed.y > 0 ? 1 : 3;
+        }
+        dir = (dir + 2) % 4;
+        this.svgDirElement.setAttribute("transform", "translate(" + this.pos.x.toFixed(1) + " " + this.pos.y.toFixed(1) + "), rotate(" + (dir * 90).toFixed(0) + ")");
         let d = "";
         let points = [...this.drawnPoints, this.pos];
         if (points.length > 0) {
@@ -324,18 +332,15 @@ class Player {
     }
 }
 class Terrain {
-    main;
-    path;
-    pathCut;
-    points = [];
-    pointsCut = [];
     constructor(main) {
         this.main = main;
+        this.points = [];
+        this.pointsCut = [];
         this.points = [
-            new Vec2(20, 20),
-            new Vec2(980, 20),
-            new Vec2(980, 980),
-            new Vec2(20, 980),
+            new Vec2(40, 40),
+            new Vec2(960, 40),
+            new Vec2(960, 960),
+            new Vec2(40, 960),
         ];
     }
     replace(start, end, points) {
@@ -366,6 +371,13 @@ class Terrain {
             else {
                 this.points = pointsInside;
                 this.pointsCut = pointsOutside;
+            }
+            for (let i = 0; i < this.points.length; i++) {
+                let ptA = this.points[i];
+                let ptB = this.points[(i + 1) % this.points.length];
+                if (Vec2.DistanceSquared(ptA, ptB) < 1) {
+                    debugger;
+                }
             }
             if (Math.max(inSurface, outSurface) < 960 * 960 * 0.2) {
                 this.main.gameover(true);
@@ -408,7 +420,6 @@ class Terrain {
         this.pathCut.setAttribute("stroke-width", "4");
         this.pathCut.setAttribute("d", dCut);
     }
-    _timout;
     removePathCut() {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
@@ -417,8 +428,6 @@ class Terrain {
     }
 }
 class Vec2 {
-    x;
-    y;
     constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;

@@ -11,6 +11,7 @@ class Player {
     public speed: Vec2;
     public radius: number = 15;
     public svgElement: SVGCircleElement;
+    public svgDirElement: SVGPathElement;
     public playerDrawnPath: SVGPathElement;
     public currentSegmentIndex: number = 0;
     public drawnPoints: Vec2[] = [];
@@ -143,8 +144,31 @@ class Player {
             this.main.container.appendChild(this.svgElement);
         }
 
+        if (!this.svgDirElement) {
+            this.svgDirElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            let r = this.radius.toFixed(0);
+            let r2 = (this.radius * 2).toFixed(0);
+            let r3 = (this.radius * 3).toFixed(0);
+            let dDir = "M-10 -25 L0 -35 L10 -25 Z";
+            this.svgDirElement.setAttribute("d", dDir);
+            this.svgDirElement.setAttribute("stroke", "white");
+            this.svgDirElement.setAttribute("stroke-width", "4");
+            this.svgDirElement.setAttribute("stroke-linejoin", "round");
+            this.svgDirElement.setAttribute("fill", playerColor);
+            this.main.container.appendChild(this.svgDirElement);
+        }
+
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
+        let dir = 0;
+        if (Math.abs(this.speed.x) > Math.abs(this.speed.y)) {
+            dir = this.speed.x > 0 ? 0 : 2;
+        }
+        else {
+            dir = this.speed.y > 0 ? 1 : 3;
+        }
+        dir = (dir + 2) % 4;
+        this.svgDirElement.setAttribute("transform", "translate(" + this.pos.x.toFixed(1) + " " + this.pos.y.toFixed(1) + "), rotate(" + (dir * 90).toFixed(0) + ")");
 
         let d = "";
         let points = [...this.drawnPoints, this.pos];

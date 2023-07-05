@@ -41,10 +41,10 @@ class Main {
         document.getElementById("game-over").style.display = "none";
         document.getElementById("credit").style.display = "none";
         this.terrain.points = [
-            new Vec2(20, 20),
-            new Vec2(980, 20),
-            new Vec2(980, 980),
-            new Vec2(20, 980),
+            new Vec2(40, 40),
+            new Vec2(960, 40),
+            new Vec2(960, 960),
+            new Vec2(40, 960),
         ];
         this.setScore(0);
         this.player.drawnPoints = [];

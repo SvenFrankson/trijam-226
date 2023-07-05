@@ -7,10 +7,10 @@ class Terrain {
 
     constructor(public main: Main) {
         this.points = [
-            new Vec2(20, 20),
-            new Vec2(980, 20),
-            new Vec2(980, 980),
-            new Vec2(20, 980),
+            new Vec2(40, 40),
+            new Vec2(960, 40),
+            new Vec2(960, 960),
+            new Vec2(40, 960),
         ];
     }
 
@@ -49,6 +49,13 @@ class Terrain {
                 this.pointsCut = pointsOutside;
             }
 
+            for (let i = 0; i < this.points.length; i++) {
+                let ptA = this.points[i];
+                let ptB = this.points[(i + 1) % this.points.length];
+                if (Vec2.DistanceSquared(ptA, ptB) < 1) {
+                    debugger;
+                }
+            }
             
             if (Math.max(inSurface, outSurface) < 960 * 960 * 0.2) {
                 this.main.gameover(true);
