@@ -94,10 +94,10 @@ class Main {
         this.player = new Player(new Vec2(20, 20), this);
         this.player.initialize();
         this.terrain.points = [
-            new Vec2(20, 20),
-            new Vec2(980, 20),
-            new Vec2(980, 980),
-            new Vec2(20, 980),
+            new Vec2(40, 40),
+            new Vec2(960, 40),
+            new Vec2(960, 960),
+            new Vec2(40, 960),
         ];
         this.terrain.redraw();
         this._mainLoop();
@@ -125,8 +125,7 @@ class Main {
         this.container.innerHTML = "";
         delete this.terrain.path;
         delete this.terrain.pathCut;
-        delete this.player.playerDrawnPath;
-        delete this.player.svgElement;
+        this.player.dispose();
         this.creeps = [];
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
@@ -183,17 +182,23 @@ class Player {
         this.pos = pos;
         this.main = main;
         this.mode = PlayerMode.Idle;
-        this.speedValue = 200;
+        this.speedValue = 150;
         this.radius = 15;
         this.currentSegmentIndex = 0;
         this.drawnPoints = [];
+        this._dir = 0;
         this.main;
         this.speed = new Vec2(0, 0);
+    }
+    dispose() {
+        delete this.svgElement;
+        delete this.svgDirElement;
+        delete this.playerDrawnPath;
     }
     initialize() {
         let action = () => {
             if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
-                this.drawnPoints.push(this.pos.clone());
+                this.drawnPoints.push(new Vec2(Math.round(this.pos.x), Math.round(this.pos.y)));
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
                     this.mode = PlayerMode.Tracing;
@@ -208,13 +213,13 @@ class Player {
                 action();
             }
         });
-        this.main.container.addEventListener("pointerup", () => {
+        window.addEventListener("pointerup", () => {
             action();
         });
     }
     start() {
-        this.pos.x = 20;
-        this.pos.y = 20;
+        this.pos.x = 40;
+        this.pos.y = 40;
     }
     updateCurrentSegmentIndex() {
         this.currentSegmentIndex = 0;
@@ -232,6 +237,14 @@ class Player {
         }
     }
     update(dt) {
+        let targetDir = 0;
+        if (Math.abs(this.speed.x) > Math.abs(this.speed.y)) {
+            targetDir = this.speed.x > 0 ? Math.PI : 0;
+        }
+        else {
+            targetDir = this.speed.y > 0 ? (3 * Math.PI / 2) : Math.PI / 2;
+        }
+        this._dir = SMath.StepFromToCirular(this._dir, targetDir, Math.PI * dt * 4);
         if (this.mode === PlayerMode.Idle) {
             let points = this.main.terrain.points;
             let ptA = points[this.currentSegmentIndex];
@@ -298,7 +311,7 @@ class Player {
             let r = this.radius.toFixed(0);
             let r2 = (this.radius * 2).toFixed(0);
             let r3 = (this.radius * 3).toFixed(0);
-            let dDir = "M-10 -25 L0 -35 L10 -25 Z";
+            let dDir = "M-12 -25 L0 -40 L12 -25 Z";
             this.svgDirElement.setAttribute("d", dDir);
             this.svgDirElement.setAttribute("stroke", "white");
             this.svgDirElement.setAttribute("stroke-width", "4");
@@ -308,15 +321,7 @@ class Player {
         }
         this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
-        let dir = 0;
-        if (Math.abs(this.speed.x) > Math.abs(this.speed.y)) {
-            dir = this.speed.x > 0 ? 0 : 2;
-        }
-        else {
-            dir = this.speed.y > 0 ? 1 : 3;
-        }
-        dir = (dir + 2) % 4;
-        this.svgDirElement.setAttribute("transform", "translate(" + this.pos.x.toFixed(1) + " " + this.pos.y.toFixed(1) + "), rotate(" + (dir * 90).toFixed(0) + ")");
+        this.svgDirElement.setAttribute("transform", "translate(" + this.pos.x.toFixed(1) + " " + this.pos.y.toFixed(1) + "), rotate(" + (this._dir / Math.PI * 180).toFixed(0) + ")");
         let d = "";
         let points = [...this.drawnPoints, this.pos];
         if (points.length > 0) {
@@ -329,6 +334,41 @@ class Player {
         this.playerDrawnPath.setAttribute("fill", "none");
         this.playerDrawnPath.setAttribute("stroke-width", "4");
         this.playerDrawnPath.setAttribute("d", d);
+    }
+}
+class SMath {
+    static StepFromToCirular(from, to, step = Math.PI / 60) {
+        while (from < 0) {
+            from += 2 * Math.PI;
+        }
+        while (from >= 2 * Math.PI) {
+            from -= 2 * Math.PI;
+        }
+        while (to < 0) {
+            to += 2 * Math.PI;
+        }
+        while (to >= 2 * Math.PI) {
+            to -= 2 * Math.PI;
+        }
+        if (Math.abs(to - from) <= step) {
+            return to;
+        }
+        if (Math.abs(to - from) >= 2 * Math.PI - step) {
+            return to;
+        }
+        if (to - from >= 0) {
+            if (Math.abs(to - from) <= Math.PI) {
+                return from + step;
+            }
+            return from - step;
+        }
+        if (to - from < 0) {
+            if (Math.abs(to - from) <= Math.PI) {
+                return from - step;
+            }
+            return from + step;
+        }
+        return to;
     }
 }
 class Terrain {
@@ -372,11 +412,15 @@ class Terrain {
                 this.points = pointsInside;
                 this.pointsCut = pointsOutside;
             }
-            for (let i = 0; i < this.points.length; i++) {
+            let i = 0;
+            while (i < this.points.length) {
                 let ptA = this.points[i];
                 let ptB = this.points[(i + 1) % this.points.length];
                 if (Vec2.DistanceSquared(ptA, ptB) < 1) {
-                    debugger;
+                    this.points.splice(i, 1);
+                }
+                else {
+                    i++;
                 }
             }
             if (Math.max(inSurface, outSurface) < 960 * 960 * 0.2) {

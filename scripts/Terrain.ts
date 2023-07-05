@@ -49,11 +49,15 @@ class Terrain {
                 this.pointsCut = pointsOutside;
             }
 
-            for (let i = 0; i < this.points.length; i++) {
+            let i = 0;
+            while (i < this.points.length) {
                 let ptA = this.points[i];
                 let ptB = this.points[(i + 1) % this.points.length];
                 if (Vec2.DistanceSquared(ptA, ptB) < 1) {
-                    debugger;
+                    this.points.splice(i, 1);
+                }
+                else {
+                    i++;
                 }
             }
             

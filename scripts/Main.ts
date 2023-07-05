@@ -20,10 +20,10 @@ class Main {
         this.player.initialize();
 
         this.terrain.points = [
-            new Vec2(20, 20),
-            new Vec2(980, 20),
-            new Vec2(980, 980),
-            new Vec2(20, 980),
+            new Vec2(40, 40),
+            new Vec2(960, 40),
+            new Vec2(960, 960),
+            new Vec2(40, 960),
         ];
         this.terrain.redraw();
 
@@ -54,8 +54,7 @@ class Main {
         this.container.innerHTML = "";
         delete this.terrain.path;
         delete this.terrain.pathCut;
-        delete this.player.playerDrawnPath;
-        delete this.player.svgElement;
+        this.player.dispose();
         this.creeps = [];
         for (let n = 0; n < 10; n++) {
             this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
