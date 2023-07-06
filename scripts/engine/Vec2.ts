@@ -1,3 +1,8 @@
+interface IVec2 {
+    x: number;
+    y: number;
+}
+
 class Vec2 {
 
     constructor(
@@ -5,6 +10,12 @@ class Vec2 {
         public y: number = 0
     ) {
 
+    }
+
+    public copyFrom(other: IVec2): Vec2 {
+        this.x = other.x;
+        this.y = other.y;
+        return this;
     }
 
     public clone(): Vec2 {

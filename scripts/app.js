@@ -1,16 +1,64 @@
 var playerColor = "#0abdc6";
 var creepColor = "#ea00d9";
-class Creep {
-    constructor(pos, main) {
-        this.pos = pos;
+class Gameobject {
+    main;
+    name = "";
+    pos = new Vec2();
+    rot = 0;
+    renderer;
+    constructor(prop, main) {
         this.main = main;
-        this.radius = 15;
+        if (prop) {
+            if (prop.name) {
+                this.name = prop.name;
+            }
+            if (prop.pos) {
+                this.pos.copyFrom(prop.pos);
+            }
+            if (isFinite(prop.rot)) {
+                this.rot = prop.rot;
+            }
+        }
+    }
+    instantiate() {
+        this.main.gameobjects.push(this);
+    }
+    dispose() {
+    }
+    start() {
+    }
+    update(dt) {
+    }
+    stop() {
+        this.main.gameobjects.remove(this);
+    }
+    draw() {
+        if (this.renderer) {
+            this.renderer.draw();
+        }
+    }
+    updatePosRot() {
+        if (this.renderer) {
+            this.renderer.updatePosRot();
+        }
+    }
+}
+/// <reference path="engine/Gameobject.ts" />
+class Creep extends Gameobject {
+    speed;
+    radius = 15;
+    testCreep;
+    constructor(pos, main) {
+        super({
+            pos: pos
+        }, main);
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
         let s = Math.random() * 100 + 50;
         this.speed.normalizeInPlace().scaleInPlace(s);
         let f = 1 - s / 150;
         this.radius = 10 + f * 10;
+        this.renderer = new CircleRenderer(this, { radius: this.radius });
     }
     update(dt) {
         let flipX = false;
@@ -54,36 +102,14 @@ class Creep {
             }
         }
     }
-    redraw() {
-        if (!this.svgElement) {
-            this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "white");
-            this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", creepColor);
-            this.main.container.appendChild(this.svgElement);
-        }
-        this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
-        this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
-    }
 }
 class Main {
+    container;
+    terrain;
+    player;
+    score = 0;
+    gameobjects = new UniqueList();
     constructor() {
-        this.creeps = [];
-        this.score = 0;
-        this._lastT = 0;
-        this._mainLoop = () => {
-            let dt = 0;
-            let t = performance.now();
-            if (isFinite(this._lastT)) {
-                dt = (t - this._lastT) / 1000;
-            }
-            this._lastT = t;
-            if (this._update) {
-                this._update(dt);
-            }
-            requestAnimationFrame(this._mainLoop);
-        };
         this.terrain = new Terrain(this);
     }
     initialize() {
@@ -126,20 +152,28 @@ class Main {
         delete this.terrain.path;
         delete this.terrain.pathCut;
         this.player.dispose();
-        this.creeps = [];
+        while (this.gameobjects.length > 0) {
+            this.gameobjects.get(0).dispose();
+        }
         for (let n = 0; n < 10; n++) {
-            this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
+            let creeper = new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this);
+            creeper.instantiate();
         }
         this.player.start();
+        this.terrain.redraw();
+        this.gameobjects.forEach(gameobject => {
+            gameobject.draw();
+            gameobject.start();
+        });
         this._update = (dt) => {
             this.player.update(dt);
-            this.creeps.forEach(creep => {
-                creep.update(dt);
+            this.gameobjects.forEach(gameobject => {
+                gameobject.update(dt);
             });
-            this.terrain.redraw();
             this.player.redraw();
-            this.creeps.forEach(creep => {
-                creep.redraw();
+            this.terrain.redraw();
+            this.gameobjects.forEach(gameobject => {
+                gameobject.updatePosRot();
             });
             //this.testCreep.redraw();
         };
@@ -148,6 +182,19 @@ class Main {
         this._update = () => {
         };
     }
+    _lastT = 0;
+    _mainLoop = () => {
+        let dt = 0;
+        let t = performance.now();
+        if (isFinite(this._lastT)) {
+            dt = (t - this._lastT) / 1000;
+        }
+        this._lastT = t;
+        if (this._update) {
+            this._update(dt);
+        }
+        requestAnimationFrame(this._mainLoop);
+    };
     gameover(success) {
         this.stop();
         document.getElementById("play").style.display = "block";
@@ -162,6 +209,7 @@ class Main {
         }
         document.getElementById("credit").style.display = "block";
     }
+    _update;
 }
 window.addEventListener("load", () => {
     document.getElementById("game-over").style.display = "none";
@@ -178,15 +226,20 @@ var PlayerMode;
     PlayerMode[PlayerMode["Closing"] = 2] = "Closing";
 })(PlayerMode || (PlayerMode = {}));
 class Player {
+    pos;
+    main;
+    mode = PlayerMode.Idle;
+    speedValue = 150;
+    speed;
+    radius = 15;
+    svgElement;
+    svgDirElement;
+    playerDrawnPath;
+    currentSegmentIndex = 0;
+    drawnPoints = [];
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
-        this.mode = PlayerMode.Idle;
-        this.speedValue = 150;
-        this.radius = 15;
-        this.currentSegmentIndex = 0;
-        this.drawnPoints = [];
-        this._dir = 0;
         this.main;
         this.speed = new Vec2(0, 0);
     }
@@ -293,6 +346,7 @@ class Player {
             }
         }
     }
+    _dir = 0;
     redraw() {
         if (!this.playerDrawnPath) {
             this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -372,10 +426,13 @@ class SMath {
     }
 }
 class Terrain {
+    main;
+    path;
+    pathCut;
+    points = [];
+    pointsCut = [];
     constructor(main) {
         this.main = main;
-        this.points = [];
-        this.pointsCut = [];
         this.points = [
             new Vec2(40, 40),
             new Vec2(960, 40),
@@ -450,6 +507,7 @@ class Terrain {
         this.path.setAttribute("stroke", "white");
         this.path.setAttribute("fill", "#091833");
         this.path.setAttribute("stroke-width", "4");
+        this.path.style.zIndex = "1";
         this.path.setAttribute("d", d);
         let dCut = "";
         if (this.pointsCut.length > 0) {
@@ -464,6 +522,7 @@ class Terrain {
         this.pathCut.setAttribute("stroke-width", "4");
         this.pathCut.setAttribute("d", dCut);
     }
+    _timout;
     removePathCut() {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
@@ -471,10 +530,119 @@ class Terrain {
         }, 1000);
     }
 }
+class Renderer {
+    gameobject;
+    constructor(gameobject) {
+        this.gameobject = gameobject;
+    }
+    draw() {
+    }
+    updatePosRot() {
+    }
+}
+class CircleRenderer extends Renderer {
+    svgElement;
+    _radius = 10;
+    get radius() {
+        return this._radius;
+    }
+    set radius(v) {
+        this._radius = v;
+        if (this.svgElement) {
+            this.svgElement.setAttribute("r", this.radius.toFixed(0));
+        }
+    }
+    constructor(gameobject, prop) {
+        super(gameobject);
+        if (prop) {
+            if (isFinite(prop.radius)) {
+                this.radius = prop.radius;
+            }
+        }
+    }
+    draw() {
+        if (!this.svgElement) {
+            this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            this.svgElement.setAttribute("r", this.radius.toFixed(0));
+            this.svgElement.setAttribute("stroke", "white");
+            this.svgElement.setAttribute("stroke-width", "4");
+            this.svgElement.setAttribute("fill", creepColor);
+            this.svgElement.style.zIndex = "2";
+            this.gameobject.main.container.appendChild(this.svgElement);
+        }
+    }
+    updatePosRot() {
+        this.svgElement.setAttribute("cx", this.gameobject.pos.x.toFixed(1));
+        this.svgElement.setAttribute("cy", this.gameobject.pos.y.toFixed(1));
+    }
+    dispose() {
+        if (this.svgElement) {
+            this.gameobject.main.container.removeChild(this.svgElement);
+        }
+        delete this.svgElement;
+    }
+}
+class UniqueList {
+    _elements = [];
+    get length() {
+        return this._elements.length;
+    }
+    get(i) {
+        return this._elements[i];
+    }
+    getLast() {
+        return this.get(this.length - 1);
+    }
+    indexOf(e) {
+        return this._elements.indexOf(e);
+    }
+    push(e) {
+        if (this._elements.indexOf(e) === -1) {
+            this._elements.push(e);
+        }
+    }
+    remove(e) {
+        let i = this._elements.indexOf(e);
+        if (i != -1) {
+            this._elements.splice(i, 1);
+            return e;
+        }
+        return undefined;
+    }
+    contains(e) {
+        return this._elements.indexOf(e) != -1;
+    }
+    find(callback) {
+        return this._elements.find(callback);
+    }
+    filter(callback) {
+        return this._elements.filter(callback);
+    }
+    forEach(callback) {
+        this._elements.forEach(e => {
+            callback(e);
+        });
+    }
+    sort(callback) {
+        this._elements = this._elements.sort(callback);
+    }
+    clone() {
+        let clonedList = new UniqueList();
+        clonedList._elements = [...this._elements];
+        return clonedList;
+    }
+}
 class Vec2 {
+    x;
+    y;
     constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;
+    }
+    copyFrom(other) {
+        this.x = other.x;
+        this.y = other.y;
+        return this;
     }
     clone() {
         return new Vec2(this.x, this.y);

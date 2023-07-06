@@ -3,8 +3,8 @@ class Main {
     public container: SVGElement;
     public terrain: Terrain;
     public player: Player;
-    public creeps: Creep[] = [];
     public score: number = 0;
+    public gameobjects: UniqueList<Gameobject> = new UniqueList<Gameobject>();
 
     constructor() {
         this.terrain = new Terrain(this);
@@ -55,22 +55,32 @@ class Main {
         delete this.terrain.path;
         delete this.terrain.pathCut;
         this.player.dispose();
-        this.creeps = [];
+        
+        while (this.gameobjects.length > 0) {
+            this.gameobjects.get(0).dispose();
+        }
+
         for (let n = 0; n < 10; n++) {
-            this.creeps.push(new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this));
+            let creeper = new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this);
+            creeper.instantiate();
         }
         this.player.start();
 
+        this.terrain.redraw();
+        this.gameobjects.forEach(gameobject => {
+            gameobject.draw();
+            gameobject.start();            
+        });
+
         this._update = (dt: number) => {
             this.player.update(dt);
-            this.creeps.forEach(creep => {
-                creep.update(dt);
+            this.gameobjects.forEach(gameobject => {
+                gameobject.update(dt);
             });
-
-            this.terrain.redraw();
             this.player.redraw();
-            this.creeps.forEach(creep => {
-                creep.redraw();
+            this.terrain.redraw();
+            this.gameobjects.forEach(gameobject => {
+                gameobject.updatePosRot();
             });
             //this.testCreep.redraw();
         }

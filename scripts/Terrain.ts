@@ -92,6 +92,7 @@ class Terrain {
         this.path.setAttribute("stroke", "white");
         this.path.setAttribute("fill", "#091833");
         this.path.setAttribute("stroke-width", "4");
+        this.path.style.zIndex = "1";
         this.path.setAttribute("d", d);
 
         let dCut = "";

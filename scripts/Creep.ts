@@ -1,12 +1,18 @@
-class Creep {
+/// <reference path="engine/Gameobject.ts" />
+
+class Creep extends Gameobject {
 
     public speed: Vec2;
     public radius: number = 15;
-    public svgElement: SVGCircleElement;
 
     public testCreep: Creep;
 
-    constructor(public pos: Vec2, public main: Main) {
+    constructor(pos, main: Main) {
+        super({
+                pos: pos
+            },
+            main
+        );
         this.main;
         this.speed = new Vec2(
             Math.random() - 0.5,
@@ -16,7 +22,9 @@ class Creep {
         this.speed.normalizeInPlace().scaleInPlace(s);
         
         let f = 1 - s / 150;
+
         this.radius = 10 + f * 10;        
+        this.renderer = new CircleRenderer(this, { radius: this.radius });
     }
 
     public update(dt: number): void {
@@ -66,19 +74,5 @@ class Creep {
                 this.main.gameover();
             }
         }
-    }
-
-    public redraw(): void {
-        if (!this.svgElement) {
-            this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "white");
-            this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", creepColor);
-            this.main.container.appendChild(this.svgElement);
-        }
-
-        this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
-        this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
     }
 }
