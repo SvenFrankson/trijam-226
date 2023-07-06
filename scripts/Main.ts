@@ -37,6 +37,8 @@ class Main {
     }
 
     public start(): void {
+        
+
         document.getElementById("play").style.display = "none";
         document.getElementById("game-over").style.display = "none";
         document.getElementById("credit").style.display = "none";

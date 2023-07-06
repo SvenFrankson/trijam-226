@@ -47,7 +47,6 @@ class CircleRenderer extends Renderer {
             this.svgElement.setAttribute("stroke", "white");
             this.svgElement.setAttribute("stroke-width", "4");
             this.svgElement.setAttribute("fill", creepColor);
-            this.svgElement.style.zIndex = "2";
             this.gameobject.main.container.appendChild(this.svgElement);
         }
     }

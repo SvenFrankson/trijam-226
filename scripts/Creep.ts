@@ -41,6 +41,8 @@ class Creep extends Gameobject {
             let sqrDist = this.pos.subtract(proj).lengthSquared();
             
             if (sqrDist < this.radius * this.radius) {
+                var audio = new Audio("sounds/mixkit-game-ball-tap-2073.wav");
+                audio.play();
                 let n = ptB.subtract(ptA).rotateInPlace(Math.PI / 2);
                 if (Math.abs(n.x) > Math.abs(n.y)) {
                     flipX = true;

@@ -30,7 +30,7 @@ class Gameobject {
     }
 
     public dispose(): void {
-        
+        this.main.gameobjects.remove(this);
     }
 
     public start(): void {
@@ -42,7 +42,7 @@ class Gameobject {
     }
 
     public stop(): void {
-        this.main.gameobjects.remove(this);
+
     }
 
     public draw(): void {

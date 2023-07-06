@@ -1,13 +1,11 @@
 var playerColor = "#0abdc6";
 var creepColor = "#ea00d9";
 class Gameobject {
-    main;
-    name = "";
-    pos = new Vec2();
-    rot = 0;
-    renderer;
     constructor(prop, main) {
         this.main = main;
+        this.name = "";
+        this.pos = new Vec2();
+        this.rot = 0;
         if (prop) {
             if (prop.name) {
                 this.name = prop.name;
@@ -24,13 +22,13 @@ class Gameobject {
         this.main.gameobjects.push(this);
     }
     dispose() {
+        this.main.gameobjects.remove(this);
     }
     start() {
     }
     update(dt) {
     }
     stop() {
-        this.main.gameobjects.remove(this);
     }
     draw() {
         if (this.renderer) {
@@ -45,13 +43,11 @@ class Gameobject {
 }
 /// <reference path="engine/Gameobject.ts" />
 class Creep extends Gameobject {
-    speed;
-    radius = 15;
-    testCreep;
     constructor(pos, main) {
         super({
             pos: pos
         }, main);
+        this.radius = 15;
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
         let s = Math.random() * 100 + 50;
@@ -72,6 +68,8 @@ class Creep extends Gameobject {
             let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
             let sqrDist = this.pos.subtract(proj).lengthSquared();
             if (sqrDist < this.radius * this.radius) {
+                var audio = new Audio("sounds/mixkit-game-ball-tap-2073.wav");
+                audio.play();
                 let n = ptB.subtract(ptA).rotateInPlace(Math.PI / 2);
                 if (Math.abs(n.x) > Math.abs(n.y)) {
                     flipX = true;
@@ -104,12 +102,22 @@ class Creep extends Gameobject {
     }
 }
 class Main {
-    container;
-    terrain;
-    player;
-    score = 0;
-    gameobjects = new UniqueList();
     constructor() {
+        this.score = 0;
+        this.gameobjects = new UniqueList();
+        this._lastT = 0;
+        this._mainLoop = () => {
+            let dt = 0;
+            let t = performance.now();
+            if (isFinite(this._lastT)) {
+                dt = (t - this._lastT) / 1000;
+            }
+            this._lastT = t;
+            if (this._update) {
+                this._update(dt);
+            }
+            requestAnimationFrame(this._mainLoop);
+        };
         this.terrain = new Terrain(this);
     }
     initialize() {
@@ -182,19 +190,6 @@ class Main {
         this._update = () => {
         };
     }
-    _lastT = 0;
-    _mainLoop = () => {
-        let dt = 0;
-        let t = performance.now();
-        if (isFinite(this._lastT)) {
-            dt = (t - this._lastT) / 1000;
-        }
-        this._lastT = t;
-        if (this._update) {
-            this._update(dt);
-        }
-        requestAnimationFrame(this._mainLoop);
-    };
     gameover(success) {
         this.stop();
         document.getElementById("play").style.display = "block";
@@ -209,7 +204,6 @@ class Main {
         }
         document.getElementById("credit").style.display = "block";
     }
-    _update;
 }
 window.addEventListener("load", () => {
     document.getElementById("game-over").style.display = "none";
@@ -226,20 +220,15 @@ var PlayerMode;
     PlayerMode[PlayerMode["Closing"] = 2] = "Closing";
 })(PlayerMode || (PlayerMode = {}));
 class Player {
-    pos;
-    main;
-    mode = PlayerMode.Idle;
-    speedValue = 150;
-    speed;
-    radius = 15;
-    svgElement;
-    svgDirElement;
-    playerDrawnPath;
-    currentSegmentIndex = 0;
-    drawnPoints = [];
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
+        this.mode = PlayerMode.Idle;
+        this.speedValue = 150;
+        this.radius = 15;
+        this.currentSegmentIndex = 0;
+        this.drawnPoints = [];
+        this._dir = 0;
         this.main;
         this.speed = new Vec2(0, 0);
     }
@@ -346,7 +335,6 @@ class Player {
             }
         }
     }
-    _dir = 0;
     redraw() {
         if (!this.playerDrawnPath) {
             this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -426,13 +414,10 @@ class SMath {
     }
 }
 class Terrain {
-    main;
-    path;
-    pathCut;
-    points = [];
-    pointsCut = [];
     constructor(main) {
         this.main = main;
+        this.points = [];
+        this.pointsCut = [];
         this.points = [
             new Vec2(40, 40),
             new Vec2(960, 40),
@@ -507,7 +492,6 @@ class Terrain {
         this.path.setAttribute("stroke", "white");
         this.path.setAttribute("fill", "#091833");
         this.path.setAttribute("stroke-width", "4");
-        this.path.style.zIndex = "1";
         this.path.setAttribute("d", d);
         let dCut = "";
         if (this.pointsCut.length > 0) {
@@ -522,7 +506,6 @@ class Terrain {
         this.pathCut.setAttribute("stroke-width", "4");
         this.pathCut.setAttribute("d", dCut);
     }
-    _timout;
     removePathCut() {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
@@ -531,7 +514,6 @@ class Terrain {
     }
 }
 class Renderer {
-    gameobject;
     constructor(gameobject) {
         this.gameobject = gameobject;
     }
@@ -541,8 +523,15 @@ class Renderer {
     }
 }
 class CircleRenderer extends Renderer {
-    svgElement;
-    _radius = 10;
+    constructor(gameobject, prop) {
+        super(gameobject);
+        this._radius = 10;
+        if (prop) {
+            if (isFinite(prop.radius)) {
+                this.radius = prop.radius;
+            }
+        }
+    }
     get radius() {
         return this._radius;
     }
@@ -552,14 +541,6 @@ class CircleRenderer extends Renderer {
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
         }
     }
-    constructor(gameobject, prop) {
-        super(gameobject);
-        if (prop) {
-            if (isFinite(prop.radius)) {
-                this.radius = prop.radius;
-            }
-        }
-    }
     draw() {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -567,7 +548,6 @@ class CircleRenderer extends Renderer {
             this.svgElement.setAttribute("stroke", "white");
             this.svgElement.setAttribute("stroke-width", "4");
             this.svgElement.setAttribute("fill", creepColor);
-            this.svgElement.style.zIndex = "2";
             this.gameobject.main.container.appendChild(this.svgElement);
         }
     }
@@ -583,7 +563,9 @@ class CircleRenderer extends Renderer {
     }
 }
 class UniqueList {
-    _elements = [];
+    constructor() {
+        this._elements = [];
+    }
     get length() {
         return this._elements.length;
     }
@@ -633,8 +615,6 @@ class UniqueList {
     }
 }
 class Vec2 {
-    x;
-    y;
     constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;
