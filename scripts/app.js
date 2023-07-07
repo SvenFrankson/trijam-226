@@ -68,7 +68,7 @@ class Creep extends Gameobject {
             let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
             let sqrDist = this.pos.subtract(proj).lengthSquared();
             if (sqrDist < this.radius * this.radius) {
-                var audio = new Audio("sounds/mixkit-game-ball-tap-2073.wav");
+                var audio = new Audio("sounds/impactMetal_000.ogg");
                 audio.play();
                 let n = ptB.subtract(ptA).rotateInPlace(Math.PI / 2);
                 if (Math.abs(n.x) > Math.abs(n.y)) {
@@ -238,12 +238,15 @@ class Player {
         delete this.playerDrawnPath;
     }
     initialize() {
+        this.engineSound = new Audio("sounds/spaceEngine_002.ogg");
+        this.engineSound.loop = true;
         let action = () => {
             if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
                 this.drawnPoints.push(new Vec2(Math.round(this.pos.x), Math.round(this.pos.y)));
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
                     this.mode = PlayerMode.Tracing;
+                    this.engineSound.play();
                 }
                 else {
                     this.mode = PlayerMode.Closing;
@@ -327,6 +330,7 @@ class Player {
                         surface = Math.floor(surface / 100);
                         this.main.setScore(this.main.score + Math.pow(surface, 1.2));
                         this.mode = PlayerMode.Idle;
+                        this.engineSound.pause();
                         this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
                         return;
