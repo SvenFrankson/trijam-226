@@ -1,8 +1,6 @@
-class Renderer {
+/// <reference path="Component.ts" />
 
-    constructor(public gameobject: Gameobject) {
-
-    }
+class Renderer extends Component {
 
     public draw(): void {
 

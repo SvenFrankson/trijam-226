@@ -1,13 +1,12 @@
 var playerColor = "#0abdc6";
 var creepColor = "#ea00d9";
 class Gameobject {
-    main;
-    name = "";
-    pos = new Vec2();
-    rot = 0;
-    renderer;
     constructor(prop, main) {
         this.main = main;
+        this.name = "";
+        this.pos = new Vec2();
+        this.rot = 0;
+        this.components = new UniqueList();
         if (prop) {
             if (prop.name) {
                 this.name = prop.name;
@@ -26,6 +25,13 @@ class Gameobject {
     dispose() {
         this.main.gameobjects.remove(this);
     }
+    addComponent(component) {
+        if (component instanceof Renderer) {
+            this._renderer = component;
+        }
+        this.components.push(component);
+        return component;
+    }
     start() {
     }
     update(dt) {
@@ -33,32 +39,31 @@ class Gameobject {
     stop() {
     }
     draw() {
-        if (this.renderer) {
-            this.renderer.draw();
+        if (this._renderer) {
+            this._renderer.draw();
         }
     }
     updatePosRot() {
-        if (this.renderer) {
-            this.renderer.updatePosRot();
+        if (this._renderer) {
+            this._renderer.updatePosRot();
         }
     }
 }
 /// <reference path="engine/Gameobject.ts" />
 class Creep extends Gameobject {
-    speed;
-    radius = 15;
-    testCreep;
     constructor(pos, main) {
         super({
             pos: pos
         }, main);
+        this.radius = 15;
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
         let s = Math.random() * 100 + 50;
         this.speed.normalizeInPlace().scaleInPlace(s);
         let f = 1 - s / 150;
         this.radius = 10 + f * 10;
-        this.renderer = new CircleRenderer(this, { radius: this.radius });
+        this.addComponent(new CircleRenderer(this, { radius: this.radius }));
+        this.impactSound = this.addComponent(new Sound(this, { fileName: "impactMetal_000.ogg" }));
     }
     update(dt) {
         let flipX = false;
@@ -72,8 +77,7 @@ class Creep extends Gameobject {
             let proj = Vec2.ProjectOnABSegment(this.pos, ptA, ptB);
             let sqrDist = this.pos.subtract(proj).lengthSquared();
             if (sqrDist < this.radius * this.radius) {
-                var audio = new Audio("sounds/impactMetal_000.ogg");
-                audio.play();
+                this.impactSound.play();
                 let n = ptB.subtract(ptA).rotateInPlace(Math.PI / 2);
                 if (Math.abs(n.x) > Math.abs(n.y)) {
                     flipX = true;
@@ -106,12 +110,22 @@ class Creep extends Gameobject {
     }
 }
 class Main {
-    container;
-    terrain;
-    player;
-    score = 0;
-    gameobjects = new UniqueList();
     constructor() {
+        this.score = 0;
+        this.gameobjects = new UniqueList();
+        this._lastT = 0;
+        this._mainLoop = () => {
+            let dt = 0;
+            let t = performance.now();
+            if (isFinite(this._lastT)) {
+                dt = (t - this._lastT) / 1000;
+            }
+            this._lastT = t;
+            if (this._update) {
+                this._update(dt);
+            }
+            requestAnimationFrame(this._mainLoop);
+        };
         this.terrain = new Terrain(this);
     }
     initialize() {
@@ -184,19 +198,6 @@ class Main {
         this._update = () => {
         };
     }
-    _lastT = 0;
-    _mainLoop = () => {
-        let dt = 0;
-        let t = performance.now();
-        if (isFinite(this._lastT)) {
-            dt = (t - this._lastT) / 1000;
-        }
-        this._lastT = t;
-        if (this._update) {
-            this._update(dt);
-        }
-        requestAnimationFrame(this._mainLoop);
-    };
     gameover(success) {
         this.stop();
         document.getElementById("play").style.display = "block";
@@ -211,7 +212,6 @@ class Main {
         }
         document.getElementById("credit").style.display = "block";
     }
-    _update;
 }
 window.addEventListener("load", () => {
     document.getElementById("game-over").style.display = "none";
@@ -228,23 +228,15 @@ var PlayerMode;
     PlayerMode[PlayerMode["Closing"] = 2] = "Closing";
 })(PlayerMode || (PlayerMode = {}));
 class Player {
-    pos;
-    main;
-    mode = PlayerMode.Idle;
-    speedValue = 150;
-    speed;
-    radius = 15;
-    svgElement;
-    svgDirElement;
-    playerDrawnPath;
-    currentSegmentIndex = 0;
-    drawnPoints = [];
-    engineSound;
-    turnSound;
-    closeSound;
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
+        this.mode = PlayerMode.Idle;
+        this.speedValue = 150;
+        this.radius = 15;
+        this.currentSegmentIndex = 0;
+        this.drawnPoints = [];
+        this._dir = 0;
         this.main;
         this.speed = new Vec2(0, 0);
     }
@@ -362,7 +354,6 @@ class Player {
             }
         }
     }
-    _dir = 0;
     redraw() {
         if (!this.playerDrawnPath) {
             this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -442,14 +433,10 @@ class SMath {
     }
 }
 class Terrain {
-    main;
-    path;
-    pathCut;
-    points = [];
-    pointsCut = [];
-    cutSound;
     constructor(main) {
         this.main = main;
+        this.points = [];
+        this.pointsCut = [];
         this.points = [
             new Vec2(40, 40),
             new Vec2(960, 40),
@@ -540,7 +527,6 @@ class Terrain {
         this.pathCut.setAttribute("stroke-width", "4");
         this.pathCut.setAttribute("d", dCut);
     }
-    _timout;
     removePathCut() {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
@@ -550,19 +536,32 @@ class Terrain {
         }, 1000);
     }
 }
-class Renderer {
-    gameobject;
+class Component {
     constructor(gameobject) {
         this.gameobject = gameobject;
     }
+    onStart() { }
+    onPause() { }
+    onUnpause() { }
+    onStop() { }
+}
+/// <reference path="Component.ts" />
+class Renderer extends Component {
     draw() {
     }
     updatePosRot() {
     }
 }
 class CircleRenderer extends Renderer {
-    svgElement;
-    _radius = 10;
+    constructor(gameobject, prop) {
+        super(gameobject);
+        this._radius = 10;
+        if (prop) {
+            if (isFinite(prop.radius)) {
+                this.radius = prop.radius;
+            }
+        }
+    }
     get radius() {
         return this._radius;
     }
@@ -570,14 +569,6 @@ class CircleRenderer extends Renderer {
         this._radius = v;
         if (this.svgElement) {
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-        }
-    }
-    constructor(gameobject, prop) {
-        super(gameobject);
-        if (prop) {
-            if (isFinite(prop.radius)) {
-                this.radius = prop.radius;
-            }
         }
     }
     draw() {
@@ -601,8 +592,44 @@ class CircleRenderer extends Renderer {
         delete this.svgElement;
     }
 }
+class Sound extends Component {
+    constructor(gameobject, prop) {
+        super(gameobject);
+        if (prop) {
+            if (prop.fileName) {
+                this._audioElement = new Audio("sounds/" + prop.fileName);
+            }
+            if (this._audioElement) {
+                if (prop.loop) {
+                    this._audioElement.loop = prop.loop;
+                }
+            }
+        }
+    }
+    play(fromBegin = true) {
+        if (this._audioElement) {
+            if (fromBegin) {
+                this._audioElement.currentTime = 0;
+            }
+            this._audioElement.play();
+        }
+    }
+    pause() {
+        if (this._audioElement) {
+            this._audioElement.pause();
+        }
+    }
+    onPause() {
+        this.pause();
+    }
+    onStop() {
+        this.pause();
+    }
+}
 class UniqueList {
-    _elements = [];
+    constructor() {
+        this._elements = [];
+    }
     get length() {
         return this._elements.length;
     }
@@ -652,8 +679,6 @@ class UniqueList {
     }
 }
 class Vec2 {
-    x;
-    y;
     constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;

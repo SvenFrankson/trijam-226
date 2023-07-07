@@ -9,7 +9,8 @@ class Gameobject {
     public name: string = "";
     public pos: Vec2 = new Vec2();
     public rot: number = 0;
-    public renderer: Renderer;
+    private _renderer: Renderer;
+    public components: UniqueList<Component> = new UniqueList<Component>();
 
     constructor(prop?: IGameobjectProp, public main?: Main) {
         if (prop) {
@@ -33,6 +34,14 @@ class Gameobject {
         this.main.gameobjects.remove(this);
     }
 
+    public addComponent(component: Component): Component {
+        if (component instanceof Renderer) {
+            this._renderer = component;
+        }
+        this.components.push(component);
+        return component;
+    }
+
     public start(): void {
 
     }
@@ -46,14 +55,14 @@ class Gameobject {
     }
 
     public draw(): void {
-        if (this.renderer) {
-            this.renderer.draw();
+        if (this._renderer) {
+            this._renderer.draw();
         }
     }
 
     public updatePosRot(): void {
-        if (this.renderer) {
-            this.renderer.updatePosRot();
+        if (this._renderer) {
+            this._renderer.updatePosRot();
         }
     }
 }

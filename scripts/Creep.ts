@@ -6,8 +6,9 @@ class Creep extends Gameobject {
     public radius: number = 15;
 
     public testCreep: Creep;
+    public impactSound: Sound;
 
-    constructor(pos, main: Main) {
+    constructor(pos: Vec2, main: Main) {
         super({
                 pos: pos
             },
@@ -24,7 +25,8 @@ class Creep extends Gameobject {
         let f = 1 - s / 150;
 
         this.radius = 10 + f * 10;        
-        this.renderer = new CircleRenderer(this, { radius: this.radius });
+        this.addComponent(new CircleRenderer(this, { radius: this.radius }));
+        this.impactSound = this.addComponent(new Sound(this, { fileName: "impactMetal_000.ogg" })) as Sound;
     }
 
     public update(dt: number): void {
@@ -41,8 +43,7 @@ class Creep extends Gameobject {
             let sqrDist = this.pos.subtract(proj).lengthSquared();
             
             if (sqrDist < this.radius * this.radius) {
-                var audio = new Audio("sounds/impactMetal_000.ogg");
-                audio.play();
+                this.impactSound.play();
                 let n = ptB.subtract(ptA).rotateInPlace(Math.PI / 2);
                 if (Math.abs(n.x) > Math.abs(n.y)) {
                     flipX = true;
