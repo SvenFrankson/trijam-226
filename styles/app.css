@@ -82,3 +82,39 @@ body {
     bottom: 15px;
     z-index: 10;
 }
+
+.terrain-path {
+    stroke: white;
+    fill: #091833;
+    stroke-width: 4;
+}
+
+.terrain-path-cut {
+    stroke: white;
+    fill: #0abdc6;
+    stroke-width: 4;
+}
+
+.player {
+    stroke: white;
+    fill: #0abdc6;
+    stroke-width: 4;
+}
+
+.player-arrow {
+    stroke: white;
+    fill: #0abdc6;
+    stroke-width: 4;
+}
+
+.player-built-path {
+    stroke: white;
+    fill: none;
+    stroke-width: 4;
+}
+
+.creeper {
+    stroke: white;
+    fill: #ea00d9;
+    stroke-width: 4;
+}

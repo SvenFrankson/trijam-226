@@ -1,31 +1,47 @@
-class Terrain {
+class Terrain extends Gameobject {
 
-    public path: SVGPathElement;
-    public pathCut: SVGPathElement;
+    public path: PathRenderer;
+    public pathCut: PathRenderer;
     public points: Vec2[] = [];
     public pointsCut: Vec2[] = [];
     public cutSound: HTMLAudioElement;
 
-    constructor(public main: Main) {
+    constructor(main: Main) {
+        super({}, main);
+    }
+
+    public instantiate(): void {
+        super.instantiate();
+        this.cutSound = new Audio("sounds/doorClose_000.ogg");
+        this.cutSound.volume = 1;
+
+        this.path = this.addComponent(new PathRenderer(this, { layer: 0, close: true, classList: [ "terrain-path" ] })) as PathRenderer;
+        this.pathCut = this.addComponent(new PathRenderer(this, { layer: 0, close: true, classList: [ "terrain-path-cut" ] })) as PathRenderer;
+    }
+
+    public dispose(): void {
+        super.dispose();
+    }
+
+    public start(): void {
+        super.start();
         this.points = [
             new Vec2(40, 40),
             new Vec2(960, 40),
             new Vec2(960, 960),
             new Vec2(40, 960),
         ];
-        
-        this.cutSound = new Audio("sounds/doorClose_000.ogg");
-        this.cutSound.volume = 1;
+        this.pointsCut = [];
+        this.updatePath();
     }
 
     public replace(start: number, end: number, points: Vec2[]): number {
-        console.log("XXX");
-        console.trace();
         if (start === end) {
             this.points.splice(start + 1, 0, ...points.reverse());
             this.pointsCut = [...points];
 
             this.removePathCut();
+            this.updatePath();
             return Vec2.BBoxSurface(...this.pointsCut);
         }
         else {
@@ -72,19 +88,26 @@ class Terrain {
             }
 
             this.removePathCut();
+            this.updatePath();
             return Vec2.BBoxSurface(...this.pointsCut);
         }
     }
 
+    public updatePath(): void {
+        this.path.points = this.points;
+        this.pathCut.points = this.pointsCut;
+    }
+
+    /*
     public redraw(): void {
         if (!this.path) {
             this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.path.classList.add("terrain-path");
+            this.path.classList.add("");
             this.main.layers[0].appendChild(this.path);
         }
         if (!this.pathCut) {
             this.pathCut = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.pathCut.classList.add("terrain-path-cut");
+            this.pathCut.classList.add("");
             this.main.layers[0].appendChild(this.pathCut);
         }
 
@@ -116,12 +139,14 @@ class Terrain {
         this.pathCut.setAttribute("stroke-width", "4");
         this.pathCut.setAttribute("d", dCut);
     }
+    */
 
     private _timout: number;
     public removePathCut(): void {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
             this.pointsCut = [];
+            this.updatePath();
             this.cutSound.currentTime = 0;
             this.cutSound.play();
         }, 1000);

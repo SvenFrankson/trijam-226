@@ -19,7 +19,7 @@ class PlayerBuiltPath extends Gameobject {
 class Player extends Gameobject {
 
     public mode: PlayerMode = PlayerMode.Idle;
-    public speedValue: number = 150;
+    public speedValue: number = 100;
     public speed: Vec2 = new Vec2(0, 0);
     public radius: number = 15;
     public playerBuiltPath: PlayerBuiltPath;
@@ -62,11 +62,11 @@ class Player extends Gameobject {
         this.drawnPoints = [];
         this.pos.x = 40;
         this.pos.y = 40;
+        this.currentSegmentIndex = 0;
 
         this.speed = new Vec2(0, 0);
         this.playerBuiltPath.setPoints([]);
 
-        console.log("START");
         document.body.addEventListener("keydown", this._onKeyDown);
         window.addEventListener("pointerup", this._onPointerUp);
     }
@@ -78,8 +78,6 @@ class Player extends Gameobject {
     }
 
     private _action(): void {
-        console.log("ACTION");
-        console.trace();
         if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
             this.drawnPoints.push(new Vec2(
                 Math.round(this.pos.x),

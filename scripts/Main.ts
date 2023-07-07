@@ -8,7 +8,6 @@ class Main {
     public gameobjects: UniqueList<Gameobject> = new UniqueList<Gameobject>();
 
     constructor() {
-        this.terrain = new Terrain(this);
     }
 
     public instantiate(): void {
@@ -25,13 +24,8 @@ class Main {
 
         this.player = new Player(new Vec2(20, 20), this);
 
-        this.terrain.points = [
-            new Vec2(40, 40),
-            new Vec2(960, 40),
-            new Vec2(960, 960),
-            new Vec2(40, 960),
-        ];
-        this.terrain.redraw();
+        this.terrain = new Terrain(this);
+        this.terrain.instantiate();
 
         this.player = new Player(new Vec2(0, 0), this);
         this.player.instantiate();
@@ -55,20 +49,8 @@ class Main {
         document.getElementById("play").style.display = "none";
         document.getElementById("game-over").style.display = "none";
         document.getElementById("credit").style.display = "none";
-        this.terrain.points = [
-            new Vec2(40, 40),
-            new Vec2(960, 40),
-            new Vec2(960, 960),
-            new Vec2(40, 960),
-        ];
-        this.terrain.pointsCut = [];
         this.setScore(0);
-        this.layers[0].removeChild(this.terrain.path);
-        this.layers[0].removeChild(this.terrain.pathCut);
-        delete this.terrain.path;
-        delete this.terrain.pathCut;
 
-        this.terrain.redraw();
         this.gameobjects.forEach(gameobject => {
             gameobject.start();
             gameobject.draw();
@@ -79,7 +61,6 @@ class Main {
             this.gameobjects.forEach(gameobject => {
                 gameobject.update(dt);
             });
-            this.terrain.redraw();
             this.gameobjects.forEach(gameobject => {
                 gameobject.updatePosRot();
             });

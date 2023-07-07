@@ -64,9 +64,11 @@ class Gameobject {
 class Creep extends Gameobject {
     constructor(main) {
         super({}, main);
+        this.speed = new Vec2(0, 0);
         this.radius = 15;
-        this.main;
-        this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
+    }
+    instantiate() {
+        super.instantiate();
         let circle = this.addComponent(new CircleRenderer(this, { radius: this.radius, layer: 1 }));
         circle.addClass("creeper");
         this.impactSound = this.addComponent(new Sound(this, { fileName: "impactMetal_000.ogg" }));
@@ -143,7 +145,6 @@ class Main {
             }
             requestAnimationFrame(this._mainLoop);
         };
-        this.terrain = new Terrain(this);
     }
     instantiate() {
         this.container = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -156,13 +157,8 @@ class Main {
             this.layers[i] = layer;
         }
         this.player = new Player(new Vec2(20, 20), this);
-        this.terrain.points = [
-            new Vec2(40, 40),
-            new Vec2(960, 40),
-            new Vec2(960, 960),
-            new Vec2(40, 960),
-        ];
-        this.terrain.redraw();
+        this.terrain = new Terrain(this);
+        this.terrain.instantiate();
         this.player = new Player(new Vec2(0, 0), this);
         this.player.instantiate();
         for (let n = 0; n < 10; n++) {
@@ -180,19 +176,7 @@ class Main {
         document.getElementById("play").style.display = "none";
         document.getElementById("game-over").style.display = "none";
         document.getElementById("credit").style.display = "none";
-        this.terrain.points = [
-            new Vec2(40, 40),
-            new Vec2(960, 40),
-            new Vec2(960, 960),
-            new Vec2(40, 960),
-        ];
-        this.terrain.pointsCut = [];
         this.setScore(0);
-        this.layers[0].removeChild(this.terrain.path);
-        this.layers[0].removeChild(this.terrain.pathCut);
-        delete this.terrain.path;
-        delete this.terrain.pathCut;
-        this.terrain.redraw();
         this.gameobjects.forEach(gameobject => {
             gameobject.start();
             gameobject.draw();
@@ -202,7 +186,6 @@ class Main {
             this.gameobjects.forEach(gameobject => {
                 gameobject.update(dt);
             });
-            this.terrain.redraw();
             this.gameobjects.forEach(gameobject => {
                 gameobject.updatePosRot();
             });
@@ -267,7 +250,7 @@ class Player extends Gameobject {
             pos: pos
         }, main);
         this.mode = PlayerMode.Idle;
-        this.speedValue = 150;
+        this.speedValue = 100;
         this.speed = new Vec2(0, 0);
         this.radius = 15;
         this.currentSegmentIndex = 0;
@@ -302,9 +285,9 @@ class Player extends Gameobject {
         this.drawnPoints = [];
         this.pos.x = 40;
         this.pos.y = 40;
+        this.currentSegmentIndex = 0;
         this.speed = new Vec2(0, 0);
         this.playerBuiltPath.setPoints([]);
-        console.log("START");
         document.body.addEventListener("keydown", this._onKeyDown);
         window.addEventListener("pointerup", this._onPointerUp);
     }
@@ -314,8 +297,6 @@ class Player extends Gameobject {
         window.removeEventListener("pointerup", this._onPointerUp);
     }
     _action() {
-        console.log("ACTION");
-        console.trace();
         if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
             this.drawnPoints.push(new Vec2(Math.round(this.pos.x), Math.round(this.pos.y)));
             this.turnSound.play();
@@ -442,27 +423,39 @@ class SMath {
         return to;
     }
 }
-class Terrain {
+class Terrain extends Gameobject {
     constructor(main) {
-        this.main = main;
+        super({}, main);
         this.points = [];
         this.pointsCut = [];
+    }
+    instantiate() {
+        super.instantiate();
+        this.cutSound = new Audio("sounds/doorClose_000.ogg");
+        this.cutSound.volume = 1;
+        this.path = this.addComponent(new PathRenderer(this, { layer: 0, close: true, classList: ["terrain-path"] }));
+        this.pathCut = this.addComponent(new PathRenderer(this, { layer: 0, close: true, classList: ["terrain-path-cut"] }));
+    }
+    dispose() {
+        super.dispose();
+    }
+    start() {
+        super.start();
         this.points = [
             new Vec2(40, 40),
             new Vec2(960, 40),
             new Vec2(960, 960),
             new Vec2(40, 960),
         ];
-        this.cutSound = new Audio("sounds/doorClose_000.ogg");
-        this.cutSound.volume = 1;
+        this.pointsCut = [];
+        this.updatePath();
     }
     replace(start, end, points) {
-        console.log("XXX");
-        console.trace();
         if (start === end) {
             this.points.splice(start + 1, 0, ...points.reverse());
             this.pointsCut = [...points];
             this.removePathCut();
+            this.updatePath();
             return Vec2.BBoxSurface(...this.pointsCut);
         }
         else {
@@ -502,49 +495,19 @@ class Terrain {
                 this.main.gameover(true);
             }
             this.removePathCut();
+            this.updatePath();
             return Vec2.BBoxSurface(...this.pointsCut);
         }
     }
-    redraw() {
-        if (!this.path) {
-            this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.path.classList.add("terrain-path");
-            this.main.layers[0].appendChild(this.path);
-        }
-        if (!this.pathCut) {
-            this.pathCut = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.pathCut.classList.add("terrain-path-cut");
-            this.main.layers[0].appendChild(this.pathCut);
-        }
-        let d = "";
-        if (this.points.length > 0) {
-            d = "M" + this.points[0].x + " " + this.points[0].y + " ";
-            for (let i = 1; i < this.points.length; i++) {
-                d += "L" + this.points[i].x + " " + this.points[i].y + " ";
-            }
-            d += "Z";
-        }
-        this.path.setAttribute("stroke", "white");
-        this.path.setAttribute("fill", "#091833");
-        this.path.setAttribute("stroke-width", "4");
-        this.path.setAttribute("d", d);
-        let dCut = "";
-        if (this.pointsCut.length > 0) {
-            dCut = "M" + this.pointsCut[0].x + " " + this.pointsCut[0].y + " ";
-            for (let i = 1; i < this.pointsCut.length; i++) {
-                dCut += "L" + this.pointsCut[i].x + " " + this.pointsCut[i].y + " ";
-            }
-            dCut += "Z";
-        }
-        this.pathCut.setAttribute("stroke", "white");
-        this.pathCut.setAttribute("fill", playerColor);
-        this.pathCut.setAttribute("stroke-width", "4");
-        this.pathCut.setAttribute("d", dCut);
+    updatePath() {
+        this.path.points = this.points;
+        this.pathCut.points = this.pointsCut;
     }
     removePathCut() {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
             this.pointsCut = [];
+            this.updatePath();
             this.cutSound.currentTime = 0;
             this.cutSound.play();
         }, 1000);
@@ -562,9 +525,20 @@ class Component {
 }
 /// <reference path="Component.ts" />
 class Renderer extends Component {
-    constructor() {
-        super(...arguments);
+    constructor(gameobject, prop) {
+        super(gameobject);
+        this.layer = 0;
         this._classList = new UniqueList();
+        if (prop) {
+            if (isFinite(prop.layer)) {
+                this.layer = prop.layer;
+            }
+            if (prop.classList) {
+                prop.classList.forEach(c => {
+                    this.addClass(c);
+                });
+            }
+        }
     }
     addClass(c) {
         this._classList.push(c);
@@ -581,15 +555,11 @@ class Renderer extends Component {
 }
 class CircleRenderer extends Renderer {
     constructor(gameobject, prop) {
-        super(gameobject);
-        this.layer = 0;
+        super(gameobject, prop);
         this._radius = 10;
         if (prop) {
             if (isFinite(prop.radius)) {
                 this.radius = prop.radius;
-            }
-            if (isFinite(prop.layer)) {
-                this.layer = prop.layer;
             }
         }
     }
@@ -616,9 +586,6 @@ class CircleRenderer extends Renderer {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "white");
-            this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", creepColor);
             this._classList.forEach(c => {
                 this.onClassAdded(c);
             });
@@ -638,10 +605,10 @@ class CircleRenderer extends Renderer {
 }
 class PathRenderer extends Renderer {
     constructor(gameobject, prop) {
-        super(gameobject);
-        this.layer = 0;
+        super(gameobject, prop);
         this._points = [];
         this._d = "";
+        this._close = false;
         if (prop) {
             if (prop.points instanceof Array) {
                 this.points = prop.points;
@@ -649,8 +616,8 @@ class PathRenderer extends Renderer {
             if (prop.d) {
                 this.d = prop.d;
             }
-            if (isFinite(prop.layer)) {
-                this.layer = prop.layer;
+            if (prop.close) {
+                this.close = prop.close;
             }
         }
     }
@@ -668,6 +635,13 @@ class PathRenderer extends Renderer {
         this._d = s;
         this.draw();
     }
+    get close() {
+        return this._close;
+    }
+    set close(v) {
+        this._close = v;
+        this.draw();
+    }
     onClassAdded(c) {
         if (this.svgElement) {
             this.svgElement.classList.add(c);
@@ -681,10 +655,6 @@ class PathRenderer extends Renderer {
     draw() {
         if (!this.svgElement) {
             this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.svgElement.setAttribute("stroke", "white");
-            this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("stroke-linejoin", "round");
-            this.svgElement.setAttribute("fill", playerColor);
             this._classList.forEach(c => {
                 this.onClassAdded(c);
             });
@@ -695,6 +665,9 @@ class PathRenderer extends Renderer {
             d = "M" + this.points[0].x + " " + this.points[0].y + " ";
             for (let i = 1; i < this.points.length; i++) {
                 d += "L" + this.points[i].x + " " + this.points[i].y + " ";
+            }
+            if (this.close) {
+                d += "Z";
             }
         }
         else {
