@@ -4,72 +4,78 @@ enum PlayerMode {
     Closing
 }
 
-class Player {
+class Player extends Gameobject {
 
     public mode: PlayerMode = PlayerMode.Idle;
     public speedValue: number = 150;
-    public speed: Vec2;
+    public speed: Vec2 = new Vec2(0, 0);
     public radius: number = 15;
     public svgElement: SVGCircleElement;
     public svgDirElement: SVGPathElement;
     public playerDrawnPath: SVGPathElement;
     public currentSegmentIndex: number = 0;
     public drawnPoints: Vec2[] = [];
-    public engineSound: HTMLAudioElement;
-    public turnSound: HTMLAudioElement;
-    public closeSound: HTMLAudioElement;
+    public engineSound: Sound;
+    public turnSound: Sound;
 
-    constructor(public pos: Vec2, public main: Main) {
-        this.main;
-        this.speed = new Vec2(0, 0);
+    constructor(pos: Vec2, main: Main) {
+        super({
+                pos: pos
+            },
+            main
+        );
+    }
+
+    public instantiate(): void {
+        super.instantiate();
+        
+        this.addComponent(new CircleRenderer(this, { radius: this.radius }));
+        this.addComponent(new PathRenderer(this, { d: "M-12 -25 L0 -40 L12 -25 Z" }));
+
+        document.body.addEventListener("keydown", this._onKeyDown);
+        window.addEventListener("pointerup", this._onPointerUp);
+
+        this.engineSound = this.addComponent(new Sound(this, { fileName: "spaceEngine_002.ogg", loop: true })) as Sound;
+        this.turnSound = this.addComponent(new Sound(this, { fileName: "forceField_000.ogg" })) as Sound;
     }
 
     public dispose(): void {
-        delete this.svgElement;
-        delete this.svgDirElement;
-        delete this.playerDrawnPath;
-    }
-
-    public initialize(): void {
-        this.engineSound = new Audio("sounds/spaceEngine_002.ogg");
-        this.engineSound.loop = true;
-        this.engineSound.volume = 1;
-        
-        this.turnSound = new Audio("sounds/forceField_000.ogg");
-        this.turnSound.volume = 1;
-
-        let action = () => {
-            if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
-                this.drawnPoints.push(new Vec2(
-                    Math.round(this.pos.x),
-                    Math.round(this.pos.y)
-                ));
-                this.turnSound.currentTime = 0;
-                this.turnSound.play();
-                this.speed.rotateInPlace(Math.PI * 0.5);
-                if (this.mode === PlayerMode.Idle) {
-                    this.mode = PlayerMode.Tracing;
-                    this.engineSound.play();
-                }
-                else {
-                    this.mode = PlayerMode.Closing;
-                }
-            }
-        }
-        document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
-            if (ev.code === "Space") {
-                action();
-            }
-        });
-
-        window.addEventListener("pointerup", () => {
-            action();
-        });
+        super.dispose();
+        document.body.removeEventListener("keydown", this._onKeyDown);
+        window.removeEventListener("pointerup", this._onPointerUp);
     }
 
     public start(): void {
         this.pos.x = 40;
         this.pos.y = 40;
+    }
+
+    private _action(): void {
+        if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
+            this.drawnPoints.push(new Vec2(
+                Math.round(this.pos.x),
+                Math.round(this.pos.y)
+            ));
+            this.turnSound.play();
+            this.speed.rotateInPlace(Math.PI * 0.5);
+            if (this.mode === PlayerMode.Idle) {
+                this.mode = PlayerMode.Tracing;
+                this.engineSound.play();
+            }
+            else {
+                this.mode = PlayerMode.Closing;
+            }
+        }
+    }
+
+    private _onKeyDown = (ev: KeyboardEvent) => {
+        if (ev.code === "Space") {
+            this._action();
+        }
+    }
+
+    private _onPointerUp = () => {
+        this._action();
     }
 
     public updateCurrentSegmentIndex(): void {
@@ -98,7 +104,7 @@ class Player {
         else {
             targetDir = this.speed.y > 0 ? (3 * Math.PI / 2) : Math.PI / 2;
         }
-        this._dir = SMath.StepFromToCirular(this._dir, targetDir, Math.PI * dt * 4);
+        this.rot = SMath.StepFromToCirular(this.rot, targetDir, Math.PI * dt * 4);
 
         if (this.mode === PlayerMode.Idle) {
             let points = this.main.terrain.points;
@@ -151,7 +157,6 @@ class Player {
                         this.main.setScore(this.main.score + Math.pow(surface, 1.2));
                         this.mode = PlayerMode.Idle;
                         this.engineSound.pause();
-                        this.turnSound.currentTime = 0;
                         this.turnSound.play();
                         this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
@@ -162,40 +167,11 @@ class Player {
         }
     }
 
-    private _dir: number = 0;
     public redraw(): void {
-
         if (!this.playerDrawnPath) {
             this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
             this.main.container.appendChild(this.playerDrawnPath);
         }
-
-        if (!this.svgElement) {
-            this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "white");
-            this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", playerColor);
-            this.main.container.appendChild(this.svgElement);
-        }
-
-        if (!this.svgDirElement) {
-            this.svgDirElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            let r = this.radius.toFixed(0);
-            let r2 = (this.radius * 2).toFixed(0);
-            let r3 = (this.radius * 3).toFixed(0);
-            let dDir = "M-12 -25 L0 -40 L12 -25 Z";
-            this.svgDirElement.setAttribute("d", dDir);
-            this.svgDirElement.setAttribute("stroke", "white");
-            this.svgDirElement.setAttribute("stroke-width", "4");
-            this.svgDirElement.setAttribute("stroke-linejoin", "round");
-            this.svgDirElement.setAttribute("fill", playerColor);
-            this.main.container.appendChild(this.svgDirElement);
-        }
-
-        this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
-        this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
-        this.svgDirElement.setAttribute("transform", "translate(" + this.pos.x.toFixed(1) + " " + this.pos.y.toFixed(1) + "), rotate(" + (this._dir / Math.PI * 180).toFixed(0) + ")");
 
         let d = "";
         let points = [...this.drawnPoints, this.pos];

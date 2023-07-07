@@ -17,7 +17,6 @@ class Main {
         document.body.appendChild(this.container);
 
         this.player = new Player(new Vec2(20, 20), this);
-        this.player.initialize();
 
         this.terrain.points = [
             new Vec2(40, 40),
@@ -49,24 +48,22 @@ class Main {
             new Vec2(40, 960),
         ];
         this.setScore(0);
-        this.player.drawnPoints = [];
-        this.player.currentSegmentIndex = 0;
-        this.player.speed.x = 0;
-        this.player.speed.y = 0;
-        this.container.innerHTML = "";
         delete this.terrain.path;
         delete this.terrain.pathCut;
-        this.player.dispose();
         
         while (this.gameobjects.length > 0) {
             this.gameobjects.get(0).dispose();
         }
 
+        this.container.innerHTML = "";
+
+        this.player = new Player(new Vec2(0, 0), this);
+        this.player.instantiate();
+
         for (let n = 0; n < 10; n++) {
             let creeper = new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this);
             creeper.instantiate();
         }
-        this.player.start();
 
         this.terrain.redraw();
         this.gameobjects.forEach(gameobject => {
@@ -92,6 +89,9 @@ class Main {
         this._update = () => {
 
         }
+        this.gameobjects.forEach(gameobject => {
+            gameobject.stop();
+        });
     }
 
     private _lastT: number = 0;

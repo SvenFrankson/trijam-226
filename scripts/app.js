@@ -6,6 +6,7 @@ class Gameobject {
         this.name = "";
         this.pos = new Vec2();
         this.rot = 0;
+        this._renderers = new UniqueList();
         this.components = new UniqueList();
         if (prop) {
             if (prop.name) {
@@ -24,10 +25,13 @@ class Gameobject {
     }
     dispose() {
         this.main.gameobjects.remove(this);
+        this.components.forEach(component => {
+            component.dispose();
+        });
     }
     addComponent(component) {
         if (component instanceof Renderer) {
-            this._renderer = component;
+            this._renderers.push(component);
         }
         this.components.push(component);
         return component;
@@ -37,15 +41,22 @@ class Gameobject {
     update(dt) {
     }
     stop() {
+        this.components.forEach(component => {
+            component.onStop();
+        });
     }
     draw() {
-        if (this._renderer) {
-            this._renderer.draw();
+        if (this._renderers) {
+            this._renderers.forEach(renderer => {
+                renderer.draw();
+            });
         }
     }
     updatePosRot() {
-        if (this._renderer) {
-            this._renderer.updatePosRot();
+        if (this._renderers) {
+            this._renderers.forEach(renderer => {
+                renderer.updatePosRot();
+            });
         }
     }
 }
@@ -134,7 +145,6 @@ class Main {
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
         this.player = new Player(new Vec2(20, 20), this);
-        this.player.initialize();
         this.terrain.points = [
             new Vec2(40, 40),
             new Vec2(960, 40),
@@ -160,22 +170,18 @@ class Main {
             new Vec2(40, 960),
         ];
         this.setScore(0);
-        this.player.drawnPoints = [];
-        this.player.currentSegmentIndex = 0;
-        this.player.speed.x = 0;
-        this.player.speed.y = 0;
-        this.container.innerHTML = "";
         delete this.terrain.path;
         delete this.terrain.pathCut;
-        this.player.dispose();
         while (this.gameobjects.length > 0) {
             this.gameobjects.get(0).dispose();
         }
+        this.container.innerHTML = "";
+        this.player = new Player(new Vec2(0, 0), this);
+        this.player.instantiate();
         for (let n = 0; n < 10; n++) {
             let creeper = new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this);
             creeper.instantiate();
         }
-        this.player.start();
         this.terrain.redraw();
         this.gameobjects.forEach(gameobject => {
             gameobject.draw();
@@ -197,6 +203,9 @@ class Main {
     stop() {
         this._update = () => {
         };
+        this.gameobjects.forEach(gameobject => {
+            gameobject.stop();
+        });
     }
     gameover(success) {
         this.stop();
@@ -227,57 +236,57 @@ var PlayerMode;
     PlayerMode[PlayerMode["Tracing"] = 1] = "Tracing";
     PlayerMode[PlayerMode["Closing"] = 2] = "Closing";
 })(PlayerMode || (PlayerMode = {}));
-class Player {
+class Player extends Gameobject {
     constructor(pos, main) {
-        this.pos = pos;
-        this.main = main;
+        super({
+            pos: pos
+        }, main);
         this.mode = PlayerMode.Idle;
         this.speedValue = 150;
+        this.speed = new Vec2(0, 0);
         this.radius = 15;
         this.currentSegmentIndex = 0;
         this.drawnPoints = [];
-        this._dir = 0;
-        this.main;
-        this.speed = new Vec2(0, 0);
-    }
-    dispose() {
-        delete this.svgElement;
-        delete this.svgDirElement;
-        delete this.playerDrawnPath;
-    }
-    initialize() {
-        this.engineSound = new Audio("sounds/spaceEngine_002.ogg");
-        this.engineSound.loop = true;
-        this.engineSound.volume = 1;
-        this.turnSound = new Audio("sounds/forceField_000.ogg");
-        this.turnSound.volume = 1;
-        let action = () => {
-            if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
-                this.drawnPoints.push(new Vec2(Math.round(this.pos.x), Math.round(this.pos.y)));
-                this.turnSound.currentTime = 0;
-                this.turnSound.play();
-                this.speed.rotateInPlace(Math.PI * 0.5);
-                if (this.mode === PlayerMode.Idle) {
-                    this.mode = PlayerMode.Tracing;
-                    this.engineSound.play();
-                }
-                else {
-                    this.mode = PlayerMode.Closing;
-                }
+        this._onKeyDown = (ev) => {
+            if (ev.code === "Space") {
+                this._action();
             }
         };
-        document.body.addEventListener("keydown", (ev) => {
-            if (ev.code === "Space") {
-                action();
-            }
-        });
-        window.addEventListener("pointerup", () => {
-            action();
-        });
+        this._onPointerUp = () => {
+            this._action();
+        };
+    }
+    instantiate() {
+        super.instantiate();
+        this.addComponent(new CircleRenderer(this, { radius: this.radius }));
+        this.addComponent(new PathRenderer(this, { d: "M-12 -25 L0 -40 L12 -25 Z" }));
+        document.body.addEventListener("keydown", this._onKeyDown);
+        window.addEventListener("pointerup", this._onPointerUp);
+        this.engineSound = this.addComponent(new Sound(this, { fileName: "spaceEngine_002.ogg", loop: true }));
+        this.turnSound = this.addComponent(new Sound(this, { fileName: "forceField_000.ogg" }));
+    }
+    dispose() {
+        super.dispose();
+        document.body.removeEventListener("keydown", this._onKeyDown);
+        window.removeEventListener("pointerup", this._onPointerUp);
     }
     start() {
         this.pos.x = 40;
         this.pos.y = 40;
+    }
+    _action() {
+        if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
+            this.drawnPoints.push(new Vec2(Math.round(this.pos.x), Math.round(this.pos.y)));
+            this.turnSound.play();
+            this.speed.rotateInPlace(Math.PI * 0.5);
+            if (this.mode === PlayerMode.Idle) {
+                this.mode = PlayerMode.Tracing;
+                this.engineSound.play();
+            }
+            else {
+                this.mode = PlayerMode.Closing;
+            }
+        }
     }
     updateCurrentSegmentIndex() {
         this.currentSegmentIndex = 0;
@@ -302,7 +311,7 @@ class Player {
         else {
             targetDir = this.speed.y > 0 ? (3 * Math.PI / 2) : Math.PI / 2;
         }
-        this._dir = SMath.StepFromToCirular(this._dir, targetDir, Math.PI * dt * 4);
+        this.rot = SMath.StepFromToCirular(this.rot, targetDir, Math.PI * dt * 4);
         if (this.mode === PlayerMode.Idle) {
             let points = this.main.terrain.points;
             let ptA = points[this.currentSegmentIndex];
@@ -344,7 +353,6 @@ class Player {
                         this.main.setScore(this.main.score + Math.pow(surface, 1.2));
                         this.mode = PlayerMode.Idle;
                         this.engineSound.pause();
-                        this.turnSound.currentTime = 0;
                         this.turnSound.play();
                         this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
@@ -359,30 +367,6 @@ class Player {
             this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
             this.main.container.appendChild(this.playerDrawnPath);
         }
-        if (!this.svgElement) {
-            this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            this.svgElement.setAttribute("r", this.radius.toFixed(0));
-            this.svgElement.setAttribute("stroke", "white");
-            this.svgElement.setAttribute("stroke-width", "4");
-            this.svgElement.setAttribute("fill", playerColor);
-            this.main.container.appendChild(this.svgElement);
-        }
-        if (!this.svgDirElement) {
-            this.svgDirElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            let r = this.radius.toFixed(0);
-            let r2 = (this.radius * 2).toFixed(0);
-            let r3 = (this.radius * 3).toFixed(0);
-            let dDir = "M-12 -25 L0 -40 L12 -25 Z";
-            this.svgDirElement.setAttribute("d", dDir);
-            this.svgDirElement.setAttribute("stroke", "white");
-            this.svgDirElement.setAttribute("stroke-width", "4");
-            this.svgDirElement.setAttribute("stroke-linejoin", "round");
-            this.svgDirElement.setAttribute("fill", playerColor);
-            this.main.container.appendChild(this.svgDirElement);
-        }
-        this.svgElement.setAttribute("cx", this.pos.x.toFixed(1));
-        this.svgElement.setAttribute("cy", this.pos.y.toFixed(1));
-        this.svgDirElement.setAttribute("transform", "translate(" + this.pos.x.toFixed(1) + " " + this.pos.y.toFixed(1) + "), rotate(" + (this._dir / Math.PI * 180).toFixed(0) + ")");
         let d = "";
         let points = [...this.drawnPoints, this.pos];
         if (points.length > 0) {
@@ -540,6 +524,7 @@ class Component {
     constructor(gameobject) {
         this.gameobject = gameobject;
     }
+    dispose() { }
     onStart() { }
     onPause() { }
     onUnpause() { }
@@ -584,6 +569,65 @@ class CircleRenderer extends Renderer {
     updatePosRot() {
         this.svgElement.setAttribute("cx", this.gameobject.pos.x.toFixed(1));
         this.svgElement.setAttribute("cy", this.gameobject.pos.y.toFixed(1));
+    }
+    dispose() {
+        if (this.svgElement) {
+            this.gameobject.main.container.removeChild(this.svgElement);
+        }
+        delete this.svgElement;
+    }
+}
+class PathRenderer extends Renderer {
+    constructor(gameobject, prop) {
+        super(gameobject);
+        this._points = [];
+        this._d = "";
+        if (prop) {
+            if (prop.points instanceof Array) {
+                this.points = prop.points;
+            }
+            if (prop.d) {
+                this.d = prop.d;
+            }
+        }
+    }
+    get points() {
+        return this._points;
+    }
+    set points(v) {
+        this._points = v;
+        this.draw();
+    }
+    get d() {
+        return this._d;
+    }
+    set d(s) {
+        this._d = s;
+        this.draw();
+    }
+    draw() {
+        if (!this.svgElement) {
+            this.svgElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            this.svgElement.setAttribute("stroke", "white");
+            this.svgElement.setAttribute("stroke-width", "4");
+            this.svgElement.setAttribute("stroke-linejoin", "round");
+            this.svgElement.setAttribute("fill", playerColor);
+            this.gameobject.main.container.appendChild(this.svgElement);
+        }
+        let d = "";
+        if (this.points.length > 0) {
+            d = "M" + this.points[0].x + " " + this.points[0].y + " ";
+            for (let i = 1; i < this.points.length; i++) {
+                d += "L" + this.points[i].x + " " + this.points[i].y + " ";
+            }
+        }
+        else {
+            d = this.d;
+        }
+        this.svgElement.setAttribute("d", d);
+    }
+    updatePosRot() {
+        this.svgElement.setAttribute("transform", "translate(" + this.gameobject.pos.x.toFixed(1) + " " + this.gameobject.pos.y.toFixed(1) + "), rotate(" + (this.gameobject.rot / Math.PI * 180).toFixed(0) + ")");
     }
     dispose() {
         if (this.svgElement) {

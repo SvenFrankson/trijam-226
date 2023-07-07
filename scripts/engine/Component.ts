@@ -1,8 +1,10 @@
 class Component {
 
-    constructor(public gameobject) {
+    constructor(public gameobject: Gameobject) {
 
     }
+
+    public dispose(): void {}
 
     public onStart(): void {}
 
