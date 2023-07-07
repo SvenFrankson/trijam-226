@@ -16,6 +16,8 @@ class Player {
     public currentSegmentIndex: number = 0;
     public drawnPoints: Vec2[] = [];
     public engineSound: HTMLAudioElement;
+    public turnSound: HTMLAudioElement;
+    public closeSound: HTMLAudioElement;
 
     constructor(public pos: Vec2, public main: Main) {
         this.main;
@@ -31,12 +33,19 @@ class Player {
     public initialize(): void {
         this.engineSound = new Audio("sounds/spaceEngine_002.ogg");
         this.engineSound.loop = true;
+        this.engineSound.volume = 1;
+        
+        this.turnSound = new Audio("sounds/forceField_000.ogg");
+        this.turnSound.volume = 1;
+
         let action = () => {
             if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
                 this.drawnPoints.push(new Vec2(
                     Math.round(this.pos.x),
                     Math.round(this.pos.y)
                 ));
+                this.turnSound.currentTime = 0;
+                this.turnSound.play();
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
                     this.mode = PlayerMode.Tracing;
@@ -142,6 +151,8 @@ class Player {
                         this.main.setScore(this.main.score + Math.pow(surface, 1.2));
                         this.mode = PlayerMode.Idle;
                         this.engineSound.pause();
+                        this.turnSound.currentTime = 0;
+                        this.turnSound.play();
                         this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
                         return;

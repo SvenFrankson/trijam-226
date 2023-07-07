@@ -1,11 +1,13 @@
 var playerColor = "#0abdc6";
 var creepColor = "#ea00d9";
 class Gameobject {
+    main;
+    name = "";
+    pos = new Vec2();
+    rot = 0;
+    renderer;
     constructor(prop, main) {
         this.main = main;
-        this.name = "";
-        this.pos = new Vec2();
-        this.rot = 0;
         if (prop) {
             if (prop.name) {
                 this.name = prop.name;
@@ -43,11 +45,13 @@ class Gameobject {
 }
 /// <reference path="engine/Gameobject.ts" />
 class Creep extends Gameobject {
+    speed;
+    radius = 15;
+    testCreep;
     constructor(pos, main) {
         super({
             pos: pos
         }, main);
-        this.radius = 15;
         this.main;
         this.speed = new Vec2(Math.random() - 0.5, Math.random() - 0.5);
         let s = Math.random() * 100 + 50;
@@ -102,22 +106,12 @@ class Creep extends Gameobject {
     }
 }
 class Main {
+    container;
+    terrain;
+    player;
+    score = 0;
+    gameobjects = new UniqueList();
     constructor() {
-        this.score = 0;
-        this.gameobjects = new UniqueList();
-        this._lastT = 0;
-        this._mainLoop = () => {
-            let dt = 0;
-            let t = performance.now();
-            if (isFinite(this._lastT)) {
-                dt = (t - this._lastT) / 1000;
-            }
-            this._lastT = t;
-            if (this._update) {
-                this._update(dt);
-            }
-            requestAnimationFrame(this._mainLoop);
-        };
         this.terrain = new Terrain(this);
     }
     initialize() {
@@ -190,6 +184,19 @@ class Main {
         this._update = () => {
         };
     }
+    _lastT = 0;
+    _mainLoop = () => {
+        let dt = 0;
+        let t = performance.now();
+        if (isFinite(this._lastT)) {
+            dt = (t - this._lastT) / 1000;
+        }
+        this._lastT = t;
+        if (this._update) {
+            this._update(dt);
+        }
+        requestAnimationFrame(this._mainLoop);
+    };
     gameover(success) {
         this.stop();
         document.getElementById("play").style.display = "block";
@@ -204,6 +211,7 @@ class Main {
         }
         document.getElementById("credit").style.display = "block";
     }
+    _update;
 }
 window.addEventListener("load", () => {
     document.getElementById("game-over").style.display = "none";
@@ -220,15 +228,23 @@ var PlayerMode;
     PlayerMode[PlayerMode["Closing"] = 2] = "Closing";
 })(PlayerMode || (PlayerMode = {}));
 class Player {
+    pos;
+    main;
+    mode = PlayerMode.Idle;
+    speedValue = 150;
+    speed;
+    radius = 15;
+    svgElement;
+    svgDirElement;
+    playerDrawnPath;
+    currentSegmentIndex = 0;
+    drawnPoints = [];
+    engineSound;
+    turnSound;
+    closeSound;
     constructor(pos, main) {
         this.pos = pos;
         this.main = main;
-        this.mode = PlayerMode.Idle;
-        this.speedValue = 150;
-        this.radius = 15;
-        this.currentSegmentIndex = 0;
-        this.drawnPoints = [];
-        this._dir = 0;
         this.main;
         this.speed = new Vec2(0, 0);
     }
@@ -240,9 +256,14 @@ class Player {
     initialize() {
         this.engineSound = new Audio("sounds/spaceEngine_002.ogg");
         this.engineSound.loop = true;
+        this.engineSound.volume = 1;
+        this.turnSound = new Audio("sounds/forceField_000.ogg");
+        this.turnSound.volume = 1;
         let action = () => {
             if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
                 this.drawnPoints.push(new Vec2(Math.round(this.pos.x), Math.round(this.pos.y)));
+                this.turnSound.currentTime = 0;
+                this.turnSound.play();
                 this.speed.rotateInPlace(Math.PI * 0.5);
                 if (this.mode === PlayerMode.Idle) {
                     this.mode = PlayerMode.Tracing;
@@ -331,6 +352,8 @@ class Player {
                         this.main.setScore(this.main.score + Math.pow(surface, 1.2));
                         this.mode = PlayerMode.Idle;
                         this.engineSound.pause();
+                        this.turnSound.currentTime = 0;
+                        this.turnSound.play();
                         this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
                         return;
@@ -339,6 +362,7 @@ class Player {
             }
         }
     }
+    _dir = 0;
     redraw() {
         if (!this.playerDrawnPath) {
             this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -418,16 +442,22 @@ class SMath {
     }
 }
 class Terrain {
+    main;
+    path;
+    pathCut;
+    points = [];
+    pointsCut = [];
+    cutSound;
     constructor(main) {
         this.main = main;
-        this.points = [];
-        this.pointsCut = [];
         this.points = [
             new Vec2(40, 40),
             new Vec2(960, 40),
             new Vec2(960, 960),
             new Vec2(40, 960),
         ];
+        this.cutSound = new Audio("sounds/doorClose_000.ogg");
+        this.cutSound.volume = 1;
     }
     replace(start, end, points) {
         if (start === end) {
@@ -510,14 +540,18 @@ class Terrain {
         this.pathCut.setAttribute("stroke-width", "4");
         this.pathCut.setAttribute("d", dCut);
     }
+    _timout;
     removePathCut() {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
             this.pointsCut = [];
+            this.cutSound.currentTime = 0;
+            this.cutSound.play();
         }, 1000);
     }
 }
 class Renderer {
+    gameobject;
     constructor(gameobject) {
         this.gameobject = gameobject;
     }
@@ -527,15 +561,8 @@ class Renderer {
     }
 }
 class CircleRenderer extends Renderer {
-    constructor(gameobject, prop) {
-        super(gameobject);
-        this._radius = 10;
-        if (prop) {
-            if (isFinite(prop.radius)) {
-                this.radius = prop.radius;
-            }
-        }
-    }
+    svgElement;
+    _radius = 10;
     get radius() {
         return this._radius;
     }
@@ -543,6 +570,14 @@ class CircleRenderer extends Renderer {
         this._radius = v;
         if (this.svgElement) {
             this.svgElement.setAttribute("r", this.radius.toFixed(0));
+        }
+    }
+    constructor(gameobject, prop) {
+        super(gameobject);
+        if (prop) {
+            if (isFinite(prop.radius)) {
+                this.radius = prop.radius;
+            }
         }
     }
     draw() {
@@ -567,9 +602,7 @@ class CircleRenderer extends Renderer {
     }
 }
 class UniqueList {
-    constructor() {
-        this._elements = [];
-    }
+    _elements = [];
     get length() {
         return this._elements.length;
     }
@@ -619,6 +652,8 @@ class UniqueList {
     }
 }
 class Vec2 {
+    x;
+    y;
     constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;

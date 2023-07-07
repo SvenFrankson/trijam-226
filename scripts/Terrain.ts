@@ -4,6 +4,7 @@ class Terrain {
     public pathCut: SVGPathElement;
     public points: Vec2[] = [];
     public pointsCut: Vec2[] = [];
+    public cutSound: HTMLAudioElement;
 
     constructor(public main: Main) {
         this.points = [
@@ -12,6 +13,9 @@ class Terrain {
             new Vec2(960, 960),
             new Vec2(40, 960),
         ];
+        
+        this.cutSound = new Audio("sounds/doorClose_000.ogg");
+        this.cutSound.volume = 1;
     }
 
     public replace(start: number, end: number, points: Vec2[]): number {
@@ -114,6 +118,8 @@ class Terrain {
         clearTimeout(this._timout);
         this._timout = setTimeout(() => {
             this.pointsCut = [];
+            this.cutSound.currentTime = 0;
+            this.cutSound.play();
         }, 1000);
     }
 }
