@@ -1,6 +1,18 @@
 /// <reference path="Component.ts" />
 
-class Renderer extends Component {
+abstract class Renderer extends Component {
+
+    protected _classList: UniqueList<string> = new UniqueList<string>();
+    public addClass(c: string): void {
+        this._classList.push(c);
+        this.onClassAdded(c);
+    }
+    public removeClass(c: string): void {
+        this._classList.remove(c);
+        this.onClassRemoved(c);
+    }
+    protected abstract onClassAdded(c: string): void;
+    protected abstract onClassRemoved(c: string): void;
 
     public draw(): void {
 
@@ -13,10 +25,12 @@ class Renderer extends Component {
 
 interface ICircleRendererProp {
     radius?: number;
+    layer?: number;
 }
 
 class CircleRenderer extends Renderer {
     public svgElement: SVGCircleElement;
+    public layer: number = 0;
 
     private _radius: number = 10;
     public get radius(): number {
@@ -29,11 +43,25 @@ class CircleRenderer extends Renderer {
         }
     }
 
+    protected onClassAdded(c: string): void {
+        if (this.svgElement) {
+            this.svgElement.classList.add(c);
+        }
+    }
+    protected onClassRemoved(c: string): void{
+        if (this.svgElement) {
+            this.svgElement.classList.remove(c);
+        }
+    }
+
     constructor(gameobject: Gameobject, prop?: ICircleRendererProp) {
         super(gameobject);
         if (prop) {
             if (isFinite(prop.radius)) {
                 this.radius = prop.radius;
+            }
+            if (isFinite(prop.layer)) {
+                this.layer = prop.layer;
             }
         }
     }
@@ -45,7 +73,10 @@ class CircleRenderer extends Renderer {
             this.svgElement.setAttribute("stroke", "white");
             this.svgElement.setAttribute("stroke-width", "4");
             this.svgElement.setAttribute("fill", creepColor);
-            this.gameobject.main.container.appendChild(this.svgElement);
+            this._classList.forEach(c => {
+                this.onClassAdded(c);
+            });
+            this.gameobject.main.layers[this.layer].appendChild(this.svgElement);
         }
     }
 
@@ -56,7 +87,7 @@ class CircleRenderer extends Renderer {
 
     public dispose(): void {
         if (this.svgElement) {
-            this.gameobject.main.container.removeChild(this.svgElement);
+            this.gameobject.main.layers[this.layer].removeChild(this.svgElement);
         }
         delete this.svgElement;
     }
@@ -65,10 +96,12 @@ class CircleRenderer extends Renderer {
 interface IPathRendererProp {
     points?: IVec2[];
     d?: string;
+    layer?: number;
 }
 
 class PathRenderer extends Renderer {
     public svgElement: SVGPathElement;
+    public layer: number = 0;
 
     private _points: IVec2[] = [];
     public get points(): IVec2[] {
@@ -88,6 +121,17 @@ class PathRenderer extends Renderer {
         this.draw();
     }
 
+    protected onClassAdded(c: string): void {
+        if (this.svgElement) {
+            this.svgElement.classList.add(c);
+        }
+    }
+    protected onClassRemoved(c: string): void{
+        if (this.svgElement) {
+            this.svgElement.classList.remove(c);
+        }
+    }
+
     constructor(gameobject: Gameobject, prop?: IPathRendererProp) {
         super(gameobject);
         if (prop) {
@@ -96,6 +140,9 @@ class PathRenderer extends Renderer {
             }
             if (prop.d) {
                 this.d = prop.d;
+            }
+            if (isFinite(prop.layer)) {
+                this.layer = prop.layer;
             }
         }
     }
@@ -107,7 +154,10 @@ class PathRenderer extends Renderer {
             this.svgElement.setAttribute("stroke-width", "4");
             this.svgElement.setAttribute("stroke-linejoin", "round");
             this.svgElement.setAttribute("fill", playerColor);
-            this.gameobject.main.container.appendChild(this.svgElement);
+            this._classList.forEach(c => {
+                this.onClassAdded(c);
+            });
+            this.gameobject.main.layers[this.layer].appendChild(this.svgElement);
         }
         
         let d = "";
@@ -129,7 +179,7 @@ class PathRenderer extends Renderer {
 
     public dispose(): void {
         if (this.svgElement) {
-            this.gameobject.main.container.removeChild(this.svgElement);
+            this.gameobject.main.layers[this.layer].removeChild(this.svgElement);
         }
         delete this.svgElement;
     }

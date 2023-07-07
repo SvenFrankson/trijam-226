@@ -1,6 +1,7 @@
 class Main {
 
     public container: SVGElement;
+    public layers: SVGGElement[] = [];
     public terrain: Terrain;
     public player: Player;
     public score: number = 0;
@@ -10,11 +11,17 @@ class Main {
         this.terrain = new Terrain(this);
     }
 
-    public initialize(): void {
+    public instantiate(): void {
         this.container = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this.container.id = "main-container";
         this.container.setAttribute("viewBox", "0 0 1000 1000");
         document.body.appendChild(this.container);
+
+        for (let i = 0; i < 4; i++) {
+            let layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            this.container.appendChild(layer);
+            this.layers[i] = layer;
+        }
 
         this.player = new Player(new Vec2(20, 20), this);
 
@@ -25,6 +32,14 @@ class Main {
             new Vec2(40, 960),
         ];
         this.terrain.redraw();
+
+        this.player = new Player(new Vec2(0, 0), this);
+        this.player.instantiate();
+
+        for (let n = 0; n < 10; n++) {
+            let creeper = new Creep(this);
+            creeper.instantiate();
+        }
 
         this._mainLoop();
     }
@@ -37,7 +52,6 @@ class Main {
 
     public start(): void {
         
-
         document.getElementById("play").style.display = "none";
         document.getElementById("game-over").style.display = "none";
         document.getElementById("credit").style.display = "none";
@@ -47,28 +61,17 @@ class Main {
             new Vec2(960, 960),
             new Vec2(40, 960),
         ];
+        this.terrain.pointsCut = [];
         this.setScore(0);
+        this.layers[0].removeChild(this.terrain.path);
+        this.layers[0].removeChild(this.terrain.pathCut);
         delete this.terrain.path;
         delete this.terrain.pathCut;
-        
-        while (this.gameobjects.length > 0) {
-            this.gameobjects.get(0).dispose();
-        }
-
-        this.container.innerHTML = "";
-
-        this.player = new Player(new Vec2(0, 0), this);
-        this.player.instantiate();
-
-        for (let n = 0; n < 10; n++) {
-            let creeper = new Creep(new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random()), this);
-            creeper.instantiate();
-        }
 
         this.terrain.redraw();
         this.gameobjects.forEach(gameobject => {
+            gameobject.start();
             gameobject.draw();
-            gameobject.start();            
         });
 
         this._update = (dt: number) => {
@@ -76,7 +79,6 @@ class Main {
             this.gameobjects.forEach(gameobject => {
                 gameobject.update(dt);
             });
-            this.player.redraw();
             this.terrain.redraw();
             this.gameobjects.forEach(gameobject => {
                 gameobject.updatePosRot();
@@ -123,14 +125,22 @@ class Main {
         document.getElementById("credit").style.display = "block";
     }
 
+    public dispose(): void {
+        while (this.gameobjects.length > 0) {
+            this.gameobjects.get(0).dispose();
+        }
+    }
+
     private _update: (dt: number) => void;
 }
 
 window.addEventListener("load", () => {
     document.getElementById("game-over").style.display = "none";
     let main = new Main();
-    main.initialize();
+    main.instantiate();
     document.getElementById("play").addEventListener("pointerup", () => {
-        main.start();
+        requestAnimationFrame(() => {
+            main.start();
+        });
     });
 });

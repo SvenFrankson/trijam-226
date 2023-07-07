@@ -9,7 +9,7 @@ class Gameobject {
     public name: string = "";
     public pos: Vec2 = new Vec2();
     public rot: number = 0;
-    private _renderers: UniqueList<Renderer> = new UniqueList<Renderer>();
+    protected renderers: UniqueList<Renderer> = new UniqueList<Renderer>();
     public components: UniqueList<Component> = new UniqueList<Component>();
 
     constructor(prop?: IGameobjectProp, public main?: Main) {
@@ -39,7 +39,7 @@ class Gameobject {
 
     public addComponent(component: Component): Component {
         if (component instanceof Renderer) {
-            this._renderers.push(component);
+            this.renderers.push(component);
         }
         this.components.push(component);
         return component;
@@ -60,16 +60,16 @@ class Gameobject {
     }
 
     public draw(): void {
-        if (this._renderers) {
-            this._renderers.forEach(renderer => {
+        if (this.renderers) {
+            this.renderers.forEach(renderer => {
                 renderer.draw();
             });
         }
     }
 
     public updatePosRot(): void {
-        if (this._renderers) {
-            this._renderers.forEach(renderer => {
+        if (this.renderers) {
+            this.renderers.forEach(renderer => {
                 renderer.updatePosRot();
             });
         }

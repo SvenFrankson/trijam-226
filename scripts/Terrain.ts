@@ -19,6 +19,8 @@ class Terrain {
     }
 
     public replace(start: number, end: number, points: Vec2[]): number {
+        console.log("XXX");
+        console.trace();
         if (start === end) {
             this.points.splice(start + 1, 0, ...points.reverse());
             this.pointsCut = [...points];
@@ -77,11 +79,13 @@ class Terrain {
     public redraw(): void {
         if (!this.path) {
             this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.main.container.appendChild(this.path);
+            this.path.classList.add("terrain-path");
+            this.main.layers[0].appendChild(this.path);
         }
         if (!this.pathCut) {
             this.pathCut = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.main.container.appendChild(this.pathCut);
+            this.pathCut.classList.add("terrain-path-cut");
+            this.main.layers[0].appendChild(this.pathCut);
         }
 
         let d = "";

@@ -8,13 +8,22 @@ class Creep extends Gameobject {
     public testCreep: Creep;
     public impactSound: Sound;
 
-    constructor(pos: Vec2, main: Main) {
-        super({
-                pos: pos
-            },
-            main
-        );
+    constructor(main: Main) {
+        super({}, main);
         this.main;
+        this.speed = new Vec2(
+            Math.random() - 0.5,
+            Math.random() - 0.5,
+        );
+   
+        let circle = this.addComponent(new CircleRenderer(this, { radius: this.radius, layer: 1  })) as CircleRenderer;
+        circle.addClass("creeper");
+        this.impactSound = this.addComponent(new Sound(this, { fileName: "impactMetal_000.ogg" })) as Sound;
+    }
+
+    public start(): void {
+        super.start();
+        this.pos = new Vec2(400 + 200 * Math.random(), 400 + 200 * Math.random());
         this.speed = new Vec2(
             Math.random() - 0.5,
             Math.random() - 0.5,
@@ -23,10 +32,9 @@ class Creep extends Gameobject {
         this.speed.normalizeInPlace().scaleInPlace(s);
         
         let f = 1 - s / 150;
-
         this.radius = 10 + f * 10;        
-        this.addComponent(new CircleRenderer(this, { radius: this.radius }));
-        this.impactSound = this.addComponent(new Sound(this, { fileName: "impactMetal_000.ogg" })) as Sound;
+
+        (this.renderers.get(0) as CircleRenderer).radius = this.radius;
     }
 
     public update(dt: number): void {

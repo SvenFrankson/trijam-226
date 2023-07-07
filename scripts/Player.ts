@@ -4,15 +4,25 @@ enum PlayerMode {
     Closing
 }
 
+class PlayerBuiltPath extends Gameobject {
+
+    public instantiate(): void {
+        let path = this.addComponent(new PathRenderer(this, { layer: 1 })) as PathRenderer;
+        path.addClass("player-built-path");
+    }
+
+    public setPoints(points: Vec2[]): void {
+        (this.renderers.get(0) as PathRenderer).points = points;
+    }
+}
+
 class Player extends Gameobject {
 
     public mode: PlayerMode = PlayerMode.Idle;
     public speedValue: number = 150;
     public speed: Vec2 = new Vec2(0, 0);
     public radius: number = 15;
-    public svgElement: SVGCircleElement;
-    public svgDirElement: SVGPathElement;
-    public playerDrawnPath: SVGPathElement;
+    public playerBuiltPath: PlayerBuiltPath;
     public currentSegmentIndex: number = 0;
     public drawnPoints: Vec2[] = [];
     public engineSound: Sound;
@@ -24,16 +34,17 @@ class Player extends Gameobject {
             },
             main
         );
+        this.playerBuiltPath = new PlayerBuiltPath({ }, main);
     }
 
     public instantiate(): void {
         super.instantiate();
+        this.playerBuiltPath.instantiate();
         
-        this.addComponent(new CircleRenderer(this, { radius: this.radius }));
-        this.addComponent(new PathRenderer(this, { d: "M-12 -25 L0 -40 L12 -25 Z" }));
-
-        document.body.addEventListener("keydown", this._onKeyDown);
-        window.addEventListener("pointerup", this._onPointerUp);
+        let circle = this.addComponent(new CircleRenderer(this, { radius: this.radius, layer: 2 })) as CircleRenderer;
+        circle.addClass("player");
+        let path = this.addComponent(new PathRenderer(this, { d: "M-12 -25 L0 -40 L12 -25 Z", layer: 2 })) as PathRenderer;
+        path.addClass("player-arrow");
 
         this.engineSound = this.addComponent(new Sound(this, { fileName: "spaceEngine_002.ogg", loop: true })) as Sound;
         this.turnSound = this.addComponent(new Sound(this, { fileName: "forceField_000.ogg" })) as Sound;
@@ -41,16 +52,34 @@ class Player extends Gameobject {
 
     public dispose(): void {
         super.dispose();
+        this.playerBuiltPath.dispose();
+    }
+
+    public start(): void {
+        super.start();
+
+        this.mode = PlayerMode.Idle;
+        this.drawnPoints = [];
+        this.pos.x = 40;
+        this.pos.y = 40;
+
+        this.speed = new Vec2(0, 0);
+        this.playerBuiltPath.setPoints([]);
+
+        console.log("START");
+        document.body.addEventListener("keydown", this._onKeyDown);
+        window.addEventListener("pointerup", this._onPointerUp);
+    }
+
+    public stop(): void {
+        super.stop();
         document.body.removeEventListener("keydown", this._onKeyDown);
         window.removeEventListener("pointerup", this._onPointerUp);
     }
 
-    public start(): void {
-        this.pos.x = 40;
-        this.pos.y = 40;
-    }
-
     private _action(): void {
+        console.log("ACTION");
+        console.trace();
         if (this.drawnPoints.length === 0 || Vec2.DistanceSquared(this.pos, this.drawnPoints[this.drawnPoints.length - 1]) > this.radius * this.radius) {
             this.drawnPoints.push(new Vec2(
                 Math.round(this.pos.x),
@@ -122,6 +151,8 @@ class Player extends Gameobject {
     
             let dp = this.speed.scale(dt);
             this.pos.addInPlace(dp);
+
+            this.playerBuiltPath.setPoints([]);
         }
         else if (this.mode === PlayerMode.Tracing || this.mode === PlayerMode.Closing) {
             let dp = this.speed.scale(dt);
@@ -160,31 +191,12 @@ class Player extends Gameobject {
                         this.turnSound.play();
                         this.updateCurrentSegmentIndex();
                         this.drawnPoints = [];
+                        this.playerBuiltPath.setPoints([]);
                         return;
                     }
                 }
             }
+            this.playerBuiltPath.setPoints([...this.drawnPoints, this.pos]);
         }
-    }
-
-    public redraw(): void {
-        if (!this.playerDrawnPath) {
-            this.playerDrawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            this.main.container.appendChild(this.playerDrawnPath);
-        }
-
-        let d = "";
-        let points = [...this.drawnPoints, this.pos];
-        if (points.length > 0) {
-            d = "M" + points[0].x + " " + points[0].y + " ";
-            for (let i = 1; i < points.length; i++) {
-                d += "L" + points[i].x + " " + points[i].y + " ";
-            }
-        }
-
-        this.playerDrawnPath.setAttribute("stroke", "white");
-        this.playerDrawnPath.setAttribute("fill", "none");
-        this.playerDrawnPath.setAttribute("stroke-width", "4");
-        this.playerDrawnPath.setAttribute("d", d);
     }
 }
